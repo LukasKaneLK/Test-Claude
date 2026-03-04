@@ -26,9 +26,14 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Focus the text area when a card is first created.
+  // Set the correct height on mount so cards loaded from localStorage
+  // don't start collapsed to one row with a scrollbar.
   useEffect(() => {
-    if (autoFocus) textareaRef.current?.focus()
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+    if (autoFocus) el.focus()
   }, [autoFocus])
 
   const style = {
@@ -82,7 +87,7 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
           placeholder="Write your task…"
           rows={1}
           className={[
-            'flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none',
+            'flex-1 resize-none overflow-hidden bg-transparent text-sm leading-relaxed outline-none',
             'placeholder:opacity-30',
             task.done ? 'line-through opacity-40' : '',
           ].join(' ')}
