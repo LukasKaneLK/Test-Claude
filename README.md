@@ -16,6 +16,9 @@ A beautiful, focused Pomodoro timer built as a modern PWA-ready web app. Clean U
 - **Mute toggle** — Silence all sounds with one click
 - **Keyboard shortcuts** — `Space` start/pause · `R` reset · `S` skip
 - **Dark / Light mode** — Persisted in `localStorage`, respects OS preference on first visit
+- **Playlist support** — Cycle through multiple background music tracks during Focus sessions
+- **Postpone timer** — Click the timer card to pause mid-session without resetting progress
+- **Interactive tutorial** — Step-by-step overlay on first visit; re-openable anytime via the `?` button in the header
 
 ---
 
