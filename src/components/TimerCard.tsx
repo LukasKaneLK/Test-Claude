@@ -94,15 +94,27 @@ export function TimerCard({
   const currentTrack: Track | undefined = playlist[currentTrackIndex]
   const { setNodeRef, isOver: isDropTarget } = useDroppable({ id: 'timer-drop' })
 
+  const showHint = () => {
+    setShowQueueHint(true)
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
+    hintTimerRef.current = setTimeout(() => setShowQueueHint(false), 3000)
+  }
+
   const handleStart = () => {
-    if (timerQueue.length === 0) {
-      setShowQueueHint(true)
-      if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
-      hintTimerRef.current = setTimeout(() => setShowQueueHint(false), 3000)
-      return
-    }
+    if (timerQueue.length === 0) { showHint(); return }
     setShowQueueHint(false)
     start()
+  }
+
+  const handleResume = () => {
+    if (timerQueue.length === 0) { showHint(); return }
+    setShowQueueHint(false)
+    resume()
+  }
+
+  const handleMusicPlay = () => {
+    if (!musicPlaying && timerQueue.length === 0) { showHint(); return }
+    toggleMusicPlayback()
   }
   const isRunning = status === 'running'
   // Map progress (0–1) to SVG strokeDashoffset: full offset = no arc, 0 = full circle.
@@ -198,7 +210,7 @@ export function TimerCard({
 
           {/* Primary action button: label and handler adapt to current status */}
           <button
-            onClick={isRunning ? pause : status === 'paused' ? resume : handleStart}
+            onClick={isRunning ? pause : status === 'paused' ? handleResume : handleStart}
             aria-label={isRunning ? 'Pause' : status === 'paused' ? 'Resume' : 'Start'}
             className={[
               'flex w-32 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold',
@@ -283,7 +295,7 @@ export function TimerCard({
               {playlist.length > 0 && (
                 <>
                   <button
-                    onClick={toggleMusicPlayback}
+                    onClick={handleMusicPlay}
                     aria-label={musicPlaying ? 'Pause music' : 'Play music'}
                     className={[
                       'px-2.5 py-1.5 transition-all',
@@ -373,7 +385,7 @@ export function TimerCard({
                     >
                       {/* Play indicator / select button */}
                       <button
-                        onClick={() => playTrackAt(i)}
+                        onClick={() => { if (timerQueue.length === 0) { showHint(); return } playTrackAt(i) }}
                         className="flex min-w-0 flex-1 items-center gap-2 text-left"
                         aria-label={`Play ${track.name}`}
                       >

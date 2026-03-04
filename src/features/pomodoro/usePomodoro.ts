@@ -34,7 +34,8 @@ export function usePomodoro() {
   const audioRef = useRef<HTMLAudioElement | null>(null)  // background focus music
   const clickRef = useRef<HTMLAudioElement | null>(null)  // button press sound
   // Ref mirrors for use inside stable callbacks (avoids stale closures).
-  const musicPlayingRef = useRef(true)
+  const musicPlayingRef = useRef(true)   // actual playback state
+  const wantsMusicRef = useRef(true)     // user's explicit intent (survives timer stop/resume)
   const loopRef = useRef(false)
   const playlistRef = useRef<Track[]>([])
   const currentTrackIndexRef = useRef(0)
@@ -42,6 +43,14 @@ export function usePomodoro() {
   // Keep refs in sync with state.
   useEffect(() => { playlistRef.current = playlist }, [playlist])
   useEffect(() => { currentTrackIndexRef.current = currentTrackIndex }, [currentTrackIndex])
+
+  // Timer status/phase refs — used inside stable callbacks to avoid stale closures.
+  const timerStatusRef = useRef(state.status)
+  const timerPhaseRef = useRef(state.phase)
+  useEffect(() => {
+    timerStatusRef.current = state.status
+    timerPhaseRef.current = state.phase
+  }, [state.status, state.phase])
 
   // Initialise audio elements once on mount.
   useEffect(() => {
@@ -114,12 +123,13 @@ export function usePomodoro() {
     const audio = audioRef.current
     if (!audio) return
     const handleEnded = () => {
+      // Don't auto-advance if the timer isn't actively running a focus session.
+      if (timerStatusRef.current !== 'running' || timerPhaseRef.current !== 'focus') return
       const pl = playlistRef.current
       if (pl.length === 0) return
       const idx = currentTrackIndexRef.current
       const isLast = idx === pl.length - 1
       if (isLast && !loopRef.current) {
-        // End of playlist, loop off → stop.
         musicPlayingRef.current = false
         setMusicPlaying(false)
         return
@@ -133,7 +143,7 @@ export function usePomodoro() {
   /** Starts a fresh focus session and begins playing background music. */
   const start = useCallback(() => {
     playClick()
-    if (audioRef.current && !audioRef.current.muted && musicPlayingRef.current) {
+    if (audioRef.current && !audioRef.current.muted && wantsMusicRef.current) {
       const pl = playlistRef.current
       if (pl.length > 0) {
         const track = pl[currentTrackIndexRef.current] ?? pl[0]
@@ -141,16 +151,20 @@ export function usePomodoro() {
       }
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => undefined)
+      musicPlayingRef.current = true
+      setMusicPlaying(true)
     }
     dispatch({ type: 'START' })
   }, [playClick])
 
   /** Stops and rewinds the background music. */
   const stopAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-    }
+    const audio = audioRef.current
+    if (!audio) return
+    audio.pause()
+    audio.currentTime = 0
+    musicPlayingRef.current = false
+    setMusicPlaying(false)
   }, [])
 
   // Stop audio when phase changes away from focus or timer stops.
@@ -163,8 +177,10 @@ export function usePomodoro() {
   const pause = useCallback(() => { playClick(); dispatch({ type: 'PAUSE' }) }, [playClick])
   const resume = useCallback(() => {
     playClick()
-    if (audioRef.current && !audioRef.current.muted && musicPlayingRef.current && state.phase === 'focus') {
+    if (audioRef.current && !audioRef.current.muted && wantsMusicRef.current && state.phase === 'focus') {
       audioRef.current.play().catch(() => undefined)
+      musicPlayingRef.current = true
+      setMusicPlaying(true)
     }
     dispatch({ type: 'RESUME' })
   }, [playClick, state.phase])
@@ -185,12 +201,23 @@ export function usePomodoro() {
     const audio = audioRef.current
     if (!audio) return
     if (audio.paused) {
+      // If a playlist track should be playing but isn't loaded yet, load it first.
+      const pl = playlistRef.current
+      if (pl.length > 0) {
+        const track = pl[currentTrackIndexRef.current] ?? pl[0]
+        if (audio.src !== track.url) {
+          audio.src = track.url
+          audio.currentTime = 0
+        }
+      }
       audio.play().catch(() => undefined)
       musicPlayingRef.current = true
+      wantsMusicRef.current = true
       setMusicPlaying(true)
     } else {
       audio.pause()
       musicPlayingRef.current = false
+      wantsMusicRef.current = false
       setMusicPlaying(false)
     }
   }, [])
@@ -214,7 +241,10 @@ export function usePomodoro() {
       currentTrackIndexRef.current = next
       return next
     })
-  }, [])
+    stopAudio()
+    if (audioRef.current) audioRef.current.src = ukuleleUrl
+    dispatch({ type: 'PAUSE' })
+  }, [stopAudio])
 
   /** Advances to the next track in the playlist (wraps around). */
   const nextTrack = useCallback(() => {
