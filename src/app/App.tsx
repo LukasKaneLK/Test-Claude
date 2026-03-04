@@ -287,22 +287,24 @@ export function App() {
         <div className="relative z-10 flex min-h-screen flex-col">
           <Header isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} phase={phase} onOpenTutorial={() => setShowTutorial(true)} onOpenSettings={() => setShowSettings(true)} />
 
-          {/* 3-column layout: tasks | timer | tasks */}
+          {/* Responsive layout: single column on mobile, 3-column on md+ */}
           <main className="flex flex-1 items-center justify-center px-4 py-8">
-            <div className="grid w-full max-w-5xl grid-cols-[1fr_auto_1fr] items-start gap-6">
+            <div className="grid w-full max-w-5xl grid-cols-1 items-start gap-6 md:grid-cols-[1fr_auto_1fr]">
 
-              {/* Left task column */}
-              <TaskColumn
-                id="left-col"
-                tasks={leftTasks}
-                newTaskId={newTaskId}
-                onAdd={() => addTask('left')}
-                onUpdate={updateTask}
-                onDelete={deleteTask}
-              />
+              {/* Left task column — pushed below timer on mobile */}
+              <div className="order-2 md:order-1">
+                <TaskColumn
+                  id="left-col"
+                  tasks={leftTasks}
+                  newTaskId={newTaskId}
+                  onAdd={() => addTask('left')}
+                  onUpdate={updateTask}
+                  onDelete={deleteTask}
+                />
+              </div>
 
-              {/* Timer — droppable zone; tasks dragged here join the queue */}
-              <div className="flex self-center justify-center">
+              {/* Timer — first on mobile, centre on desktop */}
+              <div className="order-1 flex justify-center self-center md:order-2">
                 <TimerCard
                   {...timer}
                   skip={wrappedSkip}
@@ -313,15 +315,17 @@ export function App() {
                 />
               </div>
 
-              {/* Right task column */}
-              <TaskColumn
-                id="right-col"
-                tasks={rightTasks}
-                newTaskId={newTaskId}
-                onAdd={() => addTask('right')}
-                onUpdate={updateTask}
-                onDelete={deleteTask}
-              />
+              {/* Right task column — pushed below timer on mobile */}
+              <div className="order-3">
+                <TaskColumn
+                  id="right-col"
+                  tasks={rightTasks}
+                  newTaskId={newTaskId}
+                  onAdd={() => addTask('right')}
+                  onUpdate={updateTask}
+                  onDelete={deleteTask}
+                />
+              </div>
             </div>
           </main>
 

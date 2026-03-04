@@ -128,7 +128,7 @@ export function TimerCard({
       <div
         ref={setNodeRef}
         className={[
-          'rounded-3xl border border-black/10 bg-white/60 p-8 shadow-2xl backdrop-blur-2xl transition-all duration-200',
+          'rounded-3xl border border-black/10 bg-white/60 p-6 shadow-2xl backdrop-blur-2xl transition-all duration-200 sm:p-8',
           'dark:border-white/10 dark:bg-black/30',
           isDropTarget ? `ring-4 ${DROP_RING[phase]} scale-[1.02]` : '',
         ].join(' ')}
