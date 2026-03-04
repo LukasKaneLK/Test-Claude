@@ -169,7 +169,7 @@ export function TimerCard({
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={strokeDashoffset}
-              style={{ transition: 'stroke-dashoffset 0.5s linear, stroke 0.8s ease' }}
+              style={{ transition: 'stroke 0.8s ease' }}
             />
           </svg>
 
