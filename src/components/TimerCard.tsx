@@ -11,7 +11,7 @@
  * the card shows a coloured drop-highlight ring.
  */
 import { Check, Music, Pause, Play, Repeat, RotateCcw, SkipForward, Volume2, VolumeX, X } from 'lucide-react'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import type { Phase } from '@/features/pomodoro/engine/types'
 import type { usePomodoro } from '@/features/pomodoro/usePomodoro'
@@ -98,7 +98,20 @@ export function TimerCard({
   toggleMusicPlayback,
 }: TimerCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showQueueHint, setShowQueueHint] = useState(false)
   const { setNodeRef, isOver: isDropTarget } = useDroppable({ id: 'timer-drop' })
+
+  const handleStart = () => {
+    if (timerQueue.length === 0) {
+      setShowQueueHint(true)
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
+      hintTimerRef.current = setTimeout(() => setShowQueueHint(false), 3000)
+      return
+    }
+    setShowQueueHint(false)
+    start()
+  }
   const isRunning = status === 'running'
   // Map progress (0–1) to SVG strokeDashoffset: full offset = no arc, 0 = full circle.
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress)
@@ -193,7 +206,7 @@ export function TimerCard({
 
           {/* Primary action button: label and handler adapt to current status */}
           <button
-            onClick={isRunning ? pause : status === 'paused' ? resume : start}
+            onClick={isRunning ? pause : status === 'paused' ? resume : handleStart}
             aria-label={isRunning ? 'Pause' : status === 'paused' ? 'Resume' : 'Start'}
             className={[
               'flex w-32 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold',
@@ -212,6 +225,16 @@ export function TimerCard({
             className="rounded-full p-2.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 active:scale-95 dark:hover:bg-white/10">
             <SkipForward className="h-5 w-5" />
           </button>
+        </div>
+
+        {/* Queue hint — shown when user tries to start without tasks */}
+        <div className={[
+          'overflow-hidden transition-all duration-300',
+          showQueueHint ? 'mt-3 max-h-12 opacity-100' : 'max-h-0 opacity-0',
+        ].join(' ')}>
+          <p className="text-center text-xs font-medium text-amber-600 dark:text-amber-400">
+            Add a task to the queue before starting the timer.
+          </p>
         </div>
 
         {/* Audio controls: mute toggle + custom music loader */}
