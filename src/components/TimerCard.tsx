@@ -10,7 +10,8 @@
  * When `isDropTarget` is true (a card is being dragged over the timer area),
  * the card shows a coloured drop-highlight ring.
  */
-import { Check, Pause, Play, RotateCcw, SkipForward, Volume2, VolumeX, X } from 'lucide-react'
+import { Check, Music, Pause, Play, Repeat, RotateCcw, SkipForward, Volume2, VolumeX, X } from 'lucide-react'
+import { useRef } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import type { Phase } from '@/features/pomodoro/engine/types'
 import type { usePomodoro } from '@/features/pomodoro/usePomodoro'
@@ -52,6 +53,18 @@ interface TimerCardProps extends PomodoroState {
   onQueueTaskDone: (id: string) => void
   /** Called when a queued task is removed without completing — returns it to planned. */
   onQueueTaskReturn: (id: string) => void
+  /** Called when the user picks a custom audio file. */
+  loadCustomMusic: (file: File) => void
+  /** Name of the currently loaded custom music file, or null if using the default. */
+  customMusicName: string | null
+  /** Whether the music track loops when it ends. */
+  loop: boolean
+  /** Toggles music looping. */
+  toggleLoop: () => void
+  /** Whether the music is currently playing. */
+  musicPlaying: boolean
+  /** Plays or pauses the music track without affecting the timer. */
+  toggleMusicPlayback: () => void
 }
 
 /**
@@ -77,7 +90,14 @@ export function TimerCard({
   timerQueue,
   onQueueTaskDone,
   onQueueTaskReturn,
+  loadCustomMusic,
+  customMusicName,
+  loop,
+  toggleLoop,
+  musicPlaying,
+  toggleMusicPlayback,
 }: TimerCardProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { setNodeRef, isOver: isDropTarget } = useDroppable({ id: 'timer-drop' })
   const isRunning = status === 'running'
   // Map progress (0–1) to SVG strokeDashoffset: full offset = no arc, 0 = full circle.
@@ -194,8 +214,8 @@ export function TimerCard({
           </button>
         </div>
 
-        {/* Mute toggle */}
-        <div className="mt-5 flex justify-center">
+        {/* Audio controls: mute toggle + custom music loader */}
+        <div className="mt-5 flex items-center justify-center gap-2">
           <button
             onClick={toggleMute}
             aria-label={muted ? 'Unmute sound' : 'Mute sound'}
@@ -209,6 +229,71 @@ export function TimerCard({
             {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
             {muted ? 'Muted' : 'Sound on'}
           </button>
+
+          {/* Hidden file input for custom music */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="audio/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) loadCustomMusic(file)
+              e.target.value = ''
+            }}
+          />
+
+          {/* Music tab — grouped pill containing file picker, play/pause, and repeat */}
+          <div className="flex items-center overflow-hidden rounded-full border border-black/10 dark:border-white/10">
+            {/* File picker */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Load custom music"
+              title={customMusicName ?? 'Load custom music'}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10"
+            >
+              <Music className="h-3.5 w-3.5 shrink-0" />
+              <span className="max-w-[9rem] truncate">
+                {customMusicName ?? 'Music'}
+              </span>
+            </button>
+
+            {/* Play/pause — only when a custom track is loaded */}
+            {customMusicName && (
+              <>
+                <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
+                <button
+                  onClick={toggleMusicPlayback}
+                  aria-label={musicPlaying ? 'Pause music' : 'Play music'}
+                  className={[
+                    'px-3 py-1.5 transition-all',
+                    musicPlaying
+                      ? 'opacity-40 hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10'
+                      : 'bg-black/10 opacity-70 dark:bg-white/10',
+                  ].join(' ')}
+                >
+                  {musicPlaying
+                    ? <Pause className="h-3.5 w-3.5" />
+                    : <Play  className="h-3.5 w-3.5" />}
+                </button>
+              </>
+            )}
+
+            {/* Repeat toggle */}
+            <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
+            <button
+              onClick={toggleLoop}
+              aria-label={loop ? 'Disable repeat' : 'Enable repeat'}
+              className={[
+                'px-3 py-1.5 transition-all',
+                loop
+                  ? 'bg-black/10 opacity-70 dark:bg-white/10'
+                  : 'opacity-40 hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10',
+              ].join(' ')}
+            >
+              <Repeat className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Task queue — visible when at least one task has been dropped onto the timer */}

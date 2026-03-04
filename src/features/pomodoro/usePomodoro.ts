@@ -22,9 +22,14 @@ export function usePomodoro() {
   // `now` is updated every animation frame while running to drive re-renders.
   const [now, setNow] = useState(() => Date.now())
   const [muted, setMuted] = useState(false)
-  const rafRef = useRef<number | null>(null)       // handle for the active RAF loop
-  const audioRef = useRef<HTMLAudioElement | null>(null)  // background focus music
-  const clickRef = useRef<HTMLAudioElement | null>(null)  // button press sound
+  const [loop, setLoop] = useState(false)
+  const [musicPlaying, setMusicPlaying] = useState(true)
+  const [customMusicName, setCustomMusicName] = useState<string | null>(null)
+  const rafRef = useRef<number | null>(null)            // handle for the active RAF loop
+  const audioRef = useRef<HTMLAudioElement | null>(null) // background focus music
+  const clickRef = useRef<HTMLAudioElement | null>(null) // button press sound
+  const customMusicUrlRef = useRef<string | null>(null)  // object URL for custom track
+  const musicPlayingRef = useRef(true)                   // ref mirror for use in callbacks
 
   // Initialise audio elements once on mount (avoids recreating them on every render).
   useEffect(() => {
@@ -84,7 +89,7 @@ export function usePomodoro() {
   /** Starts a fresh focus session and begins playing background music. */
   const start = useCallback(() => {
     playClick()
-    if (audioRef.current && !audioRef.current.muted) {
+    if (audioRef.current && !audioRef.current.muted && musicPlayingRef.current) {
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => undefined)
     }
@@ -109,13 +114,53 @@ export function usePomodoro() {
   const pause = useCallback(() => { playClick(); dispatch({ type: 'PAUSE' }) }, [playClick])
   const resume = useCallback(() => {
     playClick()
-    if (audioRef.current && !audioRef.current.muted && state.phase === 'focus') {
+    if (audioRef.current && !audioRef.current.muted && musicPlayingRef.current && state.phase === 'focus') {
       audioRef.current.play().catch(() => undefined)
     }
     dispatch({ type: 'RESUME' })
   }, [playClick, state.phase])
   const reset = useCallback(() => { playClick(); dispatch({ type: 'RESET' }) }, [playClick])
   const skip = useCallback(() => { playClick(); dispatch({ type: 'SKIP' }) }, [playClick])
+  /** Toggles whether the music track repeats when it ends. */
+  const toggleLoop = useCallback(() => {
+    setLoop((l) => {
+      const next = !l
+      if (audioRef.current) audioRef.current.loop = next
+      return next
+    })
+  }, [])
+
+  /** Plays or pauses the music track independently of the timer. */
+  const toggleMusicPlayback = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) {
+      audio.play().catch(() => undefined)
+      musicPlayingRef.current = true
+      setMusicPlaying(true)
+    } else {
+      audio.pause()
+      musicPlayingRef.current = false
+      setMusicPlaying(false)
+    }
+  }, [])
+
+  /** Loads a user-selected audio file as the background music track. */
+  const loadCustomMusic = useCallback((file: File) => {
+    if (customMusicUrlRef.current) {
+      URL.revokeObjectURL(customMusicUrlRef.current)
+    }
+    const url = URL.createObjectURL(file)
+    customMusicUrlRef.current = url
+    setCustomMusicName(file.name)
+    if (audioRef.current) {
+      const wasMuted = audioRef.current.muted
+      audioRef.current.pause()
+      audioRef.current.src = url
+      audioRef.current.muted = wasMuted
+    }
+  }, [])
+
   /** Merges partial config changes and recalculates durations where necessary. */
   const updateConfig = useCallback(
     (config: Partial<Config>) => dispatch({ type: 'UPDATE_CONFIG', config }),
@@ -125,6 +170,14 @@ export function usePomodoro() {
   // Derive display values from current state + live `now` timestamp.
   const displayMs = getDisplayMs(state, now)
   const progress = getProgress(state, now)
+
+  // Keep the browser tab title in sync with the countdown.
+  useEffect(() => {
+    const time = formatTime(displayMs)
+    const label = phaseLabel(state.phase)
+    document.title = state.status === 'idle' ? 'Pomodoro' : `${time} — ${label}`
+    return () => { document.title = 'Pomodoro' }
+  }, [displayMs, state.phase, state.status])
 
   // Return the public API consumed by App and TimerCard.
   return {
@@ -143,5 +196,11 @@ export function usePomodoro() {
     reset,
     skip,
     updateConfig,
+    loadCustomMusic,
+    customMusicName,
+    loop,
+    toggleLoop,
+    musicPlaying,
+    toggleMusicPlayback,
   }
 }
