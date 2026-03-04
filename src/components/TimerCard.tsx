@@ -10,10 +10,11 @@
  * When `isDropTarget` is true (a card is being dragged over the timer area),
  * the card shows a coloured drop-highlight ring.
  */
-import { Check, Pause, Play, RotateCcw, SkipForward, Volume2, VolumeX, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Check, Music, Pause, Play, Plus, Repeat, RotateCcw, SkipForward, Volume2, VolumeX, X } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import type { Phase } from '@/features/pomodoro/engine/types'
-import type { usePomodoro } from '@/features/pomodoro/usePomodoro'
+import type { Track, usePomodoro } from '@/features/pomodoro/usePomodoro'
 import type { Task } from '@/features/tasks/types'
 
 /** SVG circle geometry constants for the progress ring. */
@@ -46,11 +47,8 @@ type PomodoroState = ReturnType<typeof usePomodoro>
 
 interface TimerCardProps extends PomodoroState {
   isDark: boolean
-  /** Tasks queued to be worked on during this timer session. */
   timerQueue: Task[]
-  /** Called when a queued task is marked as completed. */
   onQueueTaskDone: (id: string) => void
-  /** Called when a queued task is removed without completing — returns it to planned. */
   onQueueTaskReturn: (id: string) => void
 }
 
@@ -77,8 +75,47 @@ export function TimerCard({
   timerQueue,
   onQueueTaskDone,
   onQueueTaskReturn,
+  playlist,
+  currentTrackIndex,
+  addTrack,
+  removeTrack,
+  playTrackAt,
+  nextTrack,
+  prevTrack,
+  loop,
+  toggleLoop,
+  musicPlaying,
+  toggleMusicPlayback,
 }: TimerCardProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showQueueHint, setShowQueueHint] = useState(false)
+  const [showPlaylist, setShowPlaylist] = useState(false)
+  const currentTrack: Track | undefined = playlist[currentTrackIndex]
   const { setNodeRef, isOver: isDropTarget } = useDroppable({ id: 'timer-drop' })
+
+  const showHint = () => {
+    setShowQueueHint(true)
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
+    hintTimerRef.current = setTimeout(() => setShowQueueHint(false), 3000)
+  }
+
+  const handleStart = () => {
+    if (timerQueue.length === 0) { showHint(); return }
+    setShowQueueHint(false)
+    start()
+  }
+
+  const handleResume = () => {
+    if (timerQueue.length === 0) { showHint(); return }
+    setShowQueueHint(false)
+    resume()
+  }
+
+  const handleMusicPlay = () => {
+    if (!musicPlaying && timerQueue.length === 0) { showHint(); return }
+    toggleMusicPlayback()
+  }
   const isRunning = status === 'running'
   // Map progress (0–1) to SVG strokeDashoffset: full offset = no arc, 0 = full circle.
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress)
@@ -149,7 +186,7 @@ export function TimerCard({
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={strokeDashoffset}
-              style={{ transition: 'stroke-dashoffset 0.5s linear, stroke 0.8s ease' }}
+              style={{ transition: 'stroke 0.8s ease' }}
             />
           </svg>
 
@@ -173,7 +210,7 @@ export function TimerCard({
 
           {/* Primary action button: label and handler adapt to current status */}
           <button
-            onClick={isRunning ? pause : status === 'paused' ? resume : start}
+            onClick={isRunning ? pause : status === 'paused' ? handleResume : handleStart}
             aria-label={isRunning ? 'Pause' : status === 'paused' ? 'Resume' : 'Start'}
             className={[
               'flex w-32 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold',
@@ -194,21 +231,185 @@ export function TimerCard({
           </button>
         </div>
 
-        {/* Mute toggle */}
-        <div className="mt-5 flex justify-center">
-          <button
-            onClick={toggleMute}
-            aria-label={muted ? 'Unmute sound' : 'Mute sound'}
-            className={[
-              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all',
-              muted
-                ? 'bg-black/10 opacity-60 dark:bg-white/10'
-                : 'opacity-30 hover:bg-black/10 hover:opacity-60 dark:hover:bg-white/10',
-            ].join(' ')}
-          >
-            {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-            {muted ? 'Muted' : 'Sound on'}
-          </button>
+        {/* Queue hint — shown when user tries to start without tasks */}
+        <div className={[
+          'overflow-hidden transition-all duration-300',
+          showQueueHint ? 'mt-3 max-h-12 opacity-100' : 'max-h-0 opacity-0',
+        ].join(' ')}>
+          <p className="text-center text-xs font-medium text-amber-600 dark:text-amber-400">
+            Add a task to the queue before starting the timer.
+          </p>
+        </div>
+
+        {/* Audio controls */}
+        <div className="mt-5 space-y-2">
+
+          {/* Row 1: mute toggle */}
+          <div className="flex justify-center">
+            <button
+              onClick={toggleMute}
+              aria-label={muted ? 'Unmute sound' : 'Mute sound'}
+              className={[
+                'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all',
+                muted
+                  ? 'bg-black/10 opacity-60 dark:bg-white/10'
+                  : 'opacity-30 hover:bg-black/10 hover:opacity-60 dark:hover:bg-white/10',
+              ].join(' ')}
+            >
+              {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+              {muted ? 'Muted' : 'Sound on'}
+            </button>
+          </div>
+
+          {/* Row 2: music pill */}
+          <div className="flex justify-center">
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) addTrack(file)
+                e.target.value = ''
+              }}
+            />
+
+            {/* Music pill */}
+            <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-black/10 dark:border-white/10">
+
+              {/* Prev track */}
+              {playlist.length > 1 && (
+                <>
+                  <button onClick={prevTrack} aria-label="Previous track"
+                    className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10">
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
+                </>
+              )}
+
+              {/* Play/pause */}
+              {playlist.length > 0 && (
+                <>
+                  <button
+                    onClick={handleMusicPlay}
+                    aria-label={musicPlaying ? 'Pause music' : 'Play music'}
+                    className={[
+                      'px-2.5 py-1.5 transition-all',
+                      musicPlaying
+                        ? 'opacity-40 hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10'
+                        : 'bg-black/10 opacity-70 dark:bg-white/10',
+                    ].join(' ')}
+                  >
+                    {musicPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                  </button>
+                  <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
+                </>
+              )}
+
+              {/* Track name / open playlist */}
+              <button
+                onClick={() => setShowPlaylist((v) => !v)}
+                aria-label={showPlaylist ? 'Hide playlist' : 'Show playlist'}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10"
+              >
+                <Music className="h-3.5 w-3.5 shrink-0" />
+                <span className="max-w-[6rem] truncate">
+                  {currentTrack ? currentTrack.name : 'Playlist'}
+                </span>
+                {showPlaylist
+                  ? <ChevronUp className="h-3 w-3 shrink-0" />
+                  : <ChevronDown className="h-3 w-3 shrink-0" />}
+              </button>
+
+              {/* Next track */}
+              {playlist.length > 1 && (
+                <>
+                  <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
+                  <button onClick={nextTrack} aria-label="Next track"
+                    className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10">
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+
+              {/* Repeat */}
+              <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
+              <button
+                onClick={toggleLoop}
+                aria-label={loop ? 'Disable repeat' : 'Enable repeat'}
+                className={[
+                  'px-2.5 py-1.5 transition-all',
+                  loop
+                    ? 'bg-black/10 opacity-70 dark:bg-white/10'
+                    : 'opacity-40 hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10',
+                ].join(' ')}
+              >
+                <Repeat className="h-3.5 w-3.5" />
+              </button>
+
+              {/* Add track */}
+              <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Add track to playlist"
+                className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Expandable playlist panel */}
+          <div className={[
+            'overflow-hidden transition-all duration-300',
+            showPlaylist ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0',
+          ].join(' ')}>
+            <div className="rounded-2xl border border-black/10 dark:border-white/10">
+              {playlist.length === 0 ? (
+                <p className="px-4 py-3 text-center text-xs opacity-40">
+                  No tracks yet — press <Plus className="inline h-3 w-3" /> to add audio files.
+                </p>
+              ) : (
+                <ul className="max-h-40 overflow-y-auto py-1">
+                  {playlist.map((track, i) => (
+                    <li
+                      key={track.url}
+                      className={[
+                        'group flex items-center gap-2 px-3 py-1.5 transition-all',
+                        i === currentTrackIndex ? 'opacity-100' : 'opacity-50 hover:opacity-80',
+                      ].join(' ')}
+                    >
+                      {/* Play indicator / select button */}
+                      <button
+                        onClick={() => { if (timerQueue.length === 0) { showHint(); return } playTrackAt(i) }}
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        aria-label={`Play ${track.name}`}
+                      >
+                        <span className="shrink-0">
+                          {i === currentTrackIndex
+                            ? <Music className="h-3 w-3" />
+                            : <Play className="h-3 w-3" />}
+                        </span>
+                        <span className="truncate text-xs">{track.name}</span>
+                      </button>
+                      {/* Remove */}
+                      <button
+                        onClick={() => removeTrack(i)}
+                        aria-label={`Remove ${track.name}`}
+                        className="shrink-0 opacity-0 transition-opacity hover:opacity-80 group-hover:opacity-40"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Task queue — visible when at least one task has been dropped onto the timer */}

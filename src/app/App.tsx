@@ -4,7 +4,7 @@
  * Layout: [left task column] | [timer] | [right task column]
  * Background and blob colours animate between phases for a visual cycle cue.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -17,6 +17,7 @@ import { arrayMove } from '@dnd-kit/sortable'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { TimerCard } from '@/components/TimerCard'
+import { PhaseCompletePopup, type PopupKind } from '@/components/PhaseCompletePopup'
 import { TaskColumn } from '@/components/tasks/TaskColumn'
 import { TaskCard } from '@/components/tasks/TaskCard'
 import { usePomodoro } from '@/features/pomodoro/usePomodoro'
@@ -69,6 +70,19 @@ function loadTasks(key: string): Task[] {
 export function App() {
   const timer = usePomodoro()
   const { phase, status, start, pause, resume, reset, skip } = timer
+
+  // Detect phase transitions to show the appropriate popup.
+  const [popup, setPopup] = useState<PopupKind | null>(null)
+  const prevPhaseRef = useRef<Phase>(phase)
+  useEffect(() => {
+    const prev = prevPhaseRef.current
+    prevPhaseRef.current = phase
+    if (prev === 'focus' && (phase === 'shortBreak' || phase === 'longBreak')) {
+      setPopup('rest')
+    } else if ((prev === 'shortBreak' || prev === 'longBreak') && phase === 'focus') {
+      setPopup('focus')
+    }
+  }, [phase])
 
   // Initialise theme from localStorage, falling back to the OS preference.
   const [isDark, setIsDark] = useState(() => {
@@ -297,6 +311,9 @@ export function App() {
           <Footer />
         </div>
       </div>
+
+      {/* Phase-complete popup */}
+      {popup && <PhaseCompletePopup kind={popup} onClose={() => setPopup(null)} />}
 
       {/* Drag overlay: renders a floating rotated copy of the card being dragged */}
       <DragOverlay>
