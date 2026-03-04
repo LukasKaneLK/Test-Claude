@@ -45,7 +45,6 @@ const BLOB: Record<Phase, { light: string; dark: string }> = {
 const collisionDetection: CollisionDetection = (args) => {
   // Check rect intersection with the timer droppable manually (droppableContainers is a Map).
   const timerRect = args.droppableRects.get('timer-drop')
-  console.log('[DnD] timerRect:', timerRect, '| all rects:', [...args.droppableRects.keys()])
   if (timerRect) {
     const { top, left, bottom, right } = args.collisionRect
     const intersects =
@@ -53,14 +52,9 @@ const collisionDetection: CollisionDetection = (args) => {
       right > timerRect.left &&
       top < timerRect.bottom &&
       bottom > timerRect.top
-    if (intersects) {
-      console.log('[DnD] Collision: timer-drop (rect intersect)')
-      return [{ id: 'timer-drop' }]
-    }
+    if (intersects) return [{ id: 'timer-drop' }]
   }
-  const result = closestCenter(args)
-  console.log('[DnD] Collision: closestCenter ->', result[0]?.id ?? 'none')
-  return result
+  return closestCenter(args)
 }
 
 /** Load tasks from localStorage, returning an empty array on failure. */
@@ -170,7 +164,6 @@ export function App() {
       leftTasks.find((t) => t.id === active.id) ??
       rightTasks.find((t) => t.id === active.id) ??
       null
-    console.log('[DnD] Drag start:', task ?? active.id)
     setActiveTask(task)
     setNewTaskId(null) // clear auto-focus while dragging
   }
@@ -181,25 +174,20 @@ export function App() {
 
     // --- Drop onto timer: move task into queue and start timer ---
     if (over.id === 'timer-drop') {
-      console.log('[DnD] Dropped on timer, active.id:', active.id)
       const activeId = String(active.id)
       const task =
         leftTasks.find((t) => t.id === activeId) ??
         rightTasks.find((t) => t.id === activeId)
       if (task) {
         const sourceColumn = leftTasks.some((t) => t.id === activeId) ? 'left' : 'right'
-        console.log('[DnD] Task added to queue:', task)
         setLeftTasks((prev) => prev.filter((t) => t.id !== activeId))
         setRightTasks((prev) => prev.filter((t) => t.id !== activeId))
         setTimerQueue((prev) => [...prev, { ...task, sourceColumn }])
         // Auto-start only when the first task enters the queue.
         if (timerQueue.length === 0 && timer.status === 'idle') timer.start()
-      } else {
-        console.warn('[DnD] Dropped on timer but task not found for id:', activeId)
       }
       return
     }
-    console.log('[DnD] Drop target:', over.id, '| active:', active.id)
 
     const activeId = String(active.id)
     const overId = String(over.id)
