@@ -5,7 +5,7 @@
  */
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, X } from 'lucide-react'
+import { Check, GripVertical, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import type { Task } from '@/features/tasks/types'
 
@@ -65,15 +65,6 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
           <GripVertical className="h-4 w-4" />
         </button>
 
-        {/* Done checkbox */}
-        <input
-          type="checkbox"
-          checked={task.done}
-          onChange={(e) => onUpdate(task.id, { done: e.target.checked })}
-          className="mt-1 cursor-pointer accent-current"
-          aria-label="Mark task complete"
-        />
-
         {/* Editable task text */}
         <textarea
           ref={textareaRef}
@@ -94,10 +85,19 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
           aria-label="Task description"
         />
 
+        {/* Complete button — visible on hover */}
+        <button
+          onClick={() => onUpdate(task.id, { done: true })}
+          className="self-center shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
+          aria-label="Mark task complete"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+
         {/* Delete button — visible on hover */}
         <button
           onClick={() => onDelete(task.id)}
-          className="shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
+          className="self-center shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
           aria-label="Delete task"
         >
           <X className="h-4 w-4" />
