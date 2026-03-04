@@ -25,7 +25,7 @@ export function TaskColumn({ id, tasks, newTaskId, onAdd, onUpdate, onDelete }: 
   const { setNodeRef } = useDroppable({ id })
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" data-tutorial="task-column">
       {/* Column tab header */}
       <div className="flex">
         <span className="rounded-lg bg-black/8 px-3 py-1 text-xs font-semibold uppercase tracking-widest opacity-50 dark:bg-white/8">

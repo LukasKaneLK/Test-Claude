@@ -18,6 +18,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { TimerCard } from '@/components/TimerCard'
 import { PhaseCompletePopup, type PopupKind } from '@/components/PhaseCompletePopup'
+import { TutorialOverlay } from '@/components/TutorialOverlay'
 import { TaskColumn } from '@/components/tasks/TaskColumn'
 import { TaskCard } from '@/components/tasks/TaskCard'
 import { usePomodoro } from '@/features/pomodoro/usePomodoro'
@@ -70,6 +71,13 @@ function loadTasks(key: string): Task[] {
 export function App() {
   const timer = usePomodoro()
   const { phase, status, start, pause, resume, reset, skip } = timer
+
+  // Show tutorial on first visit; can be re-opened via the header help button.
+  const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('tutorial-seen'))
+  const closeTutorial = () => {
+    localStorage.setItem('tutorial-seen', '1')
+    setShowTutorial(false)
+  }
 
   // Detect phase transitions to show the appropriate popup.
   const [popup, setPopup] = useState<PopupKind | null>(null)
@@ -269,7 +277,7 @@ export function App() {
         />
 
         <div className="relative z-10 flex min-h-screen flex-col">
-          <Header isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} phase={phase} />
+          <Header isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} phase={phase} onOpenTutorial={() => setShowTutorial(true)} />
 
           {/* 3-column layout: tasks | timer | tasks */}
           <main className="flex flex-1 items-center justify-center px-4 py-8">
@@ -314,6 +322,9 @@ export function App() {
 
       {/* Phase-complete popup */}
       {popup && <PhaseCompletePopup kind={popup} onClose={() => setPopup(null)} />}
+
+      {/* Tutorial overlay */}
+      {showTutorial && <TutorialOverlay onDone={closeTutorial} />}
 
       {/* Drag overlay: renders a floating rotated copy of the card being dragged */}
       <DragOverlay>

@@ -13,6 +13,7 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Check, Music, Pause, Play, Plus, Repeat, RotateCcw, SkipForward, Volume2, VolumeX, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
+import { Tooltip } from '@/components/ui/Tooltip'
 import type { Phase } from '@/features/pomodoro/engine/types'
 import type { Track, usePomodoro } from '@/features/pomodoro/usePomodoro'
 import type { Task } from '@/features/tasks/types'
@@ -125,7 +126,7 @@ export function TimerCard({
   const upNext = timerQueue.slice(1)
 
   return (
-    <div className="mx-auto w-full max-w-sm">
+    <div className="mx-auto w-full max-w-sm" data-tutorial="timer-card">
       {/* Glass card — highlighted with a ring when a task is dragged over */}
       <div
         ref={setNodeRef}
@@ -144,7 +145,8 @@ export function TimerCard({
 
         {/* Session dots — one dot per session slot; filled dots show completed sessions
             within the current cycle (wraps after sessionsBeforeLongBreak). */}
-        <div className="mb-6 flex items-center justify-center gap-2">
+        <Tooltip text={`${completedSessions % config.sessionsBeforeLongBreak} of ${config.sessionsBeforeLongBreak} focus sessions completed`}>
+        <div className="mb-6 flex items-center justify-center gap-2" data-tutorial="session-dots">
           {Array.from({ length: config.sessionsBeforeLongBreak }).map((_, i) => {
             const filled = i < (completedSessions % config.sessionsBeforeLongBreak)
             return (
@@ -165,6 +167,7 @@ export function TimerCard({
             )
           })}
         </div>
+        </Tooltip>
 
         {/* Progress ring + time */}
         <div className="relative mx-auto mb-8 flex h-56 w-56 items-center justify-center">
@@ -203,32 +206,39 @@ export function TimerCard({
 
         {/* Controls */}
         <div className="flex items-center justify-center gap-4">
-          <button onClick={reset} aria-label="Reset timer"
-            className="rounded-full p-2.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 active:scale-95 dark:hover:bg-white/10">
-            <RotateCcw className="h-5 w-5" />
-          </button>
+          <Tooltip text="Reset timer to full duration">
+            <button onClick={reset} aria-label="Reset timer"
+              className="rounded-full p-2.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 active:scale-95 dark:hover:bg-white/10">
+              <RotateCcw className="h-5 w-5" />
+            </button>
+          </Tooltip>
 
           {/* Primary action button: label and handler adapt to current status */}
-          <button
-            onClick={isRunning ? pause : status === 'paused' ? handleResume : handleStart}
-            aria-label={isRunning ? 'Pause' : status === 'paused' ? 'Resume' : 'Start'}
-            className={[
-              'flex w-32 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold',
-              'shadow-lg transition-all duration-150 active:scale-95',
-              BTN_COLOR[phase],
-            ].join(' ')}
-          >
-            {isRunning ? (
-              <><Pause className="h-4 w-4" /> Pause</>
-            ) : (
-              <><Play className="h-4 w-4" /> {status === 'paused' ? 'Resume' : 'Start'}</>
-            )}
-          </button>
+          <Tooltip text={isRunning ? 'Pause timer' : status === 'paused' ? 'Resume timer' : 'Start focus session'}>
+            <button
+              data-tutorial="timer-start"
+              onClick={isRunning ? pause : status === 'paused' ? handleResume : handleStart}
+              aria-label={isRunning ? 'Pause' : status === 'paused' ? 'Resume' : 'Start'}
+              className={[
+                'flex w-32 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold',
+                'shadow-lg transition-all duration-150 active:scale-95',
+                BTN_COLOR[phase],
+              ].join(' ')}
+            >
+              {isRunning ? (
+                <><Pause className="h-4 w-4" /> Pause</>
+              ) : (
+                <><Play className="h-4 w-4" /> {status === 'paused' ? 'Resume' : 'Start'}</>
+              )}
+            </button>
+          </Tooltip>
 
-          <button onClick={skip} aria-label="Skip phase"
-            className="rounded-full p-2.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 active:scale-95 dark:hover:bg-white/10">
-            <SkipForward className="h-5 w-5" />
-          </button>
+          <Tooltip text="Skip to next phase">
+            <button onClick={skip} aria-label="Skip phase"
+              className="rounded-full p-2.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 active:scale-95 dark:hover:bg-white/10">
+              <SkipForward className="h-5 w-5" />
+            </button>
+          </Tooltip>
         </div>
 
         {/* Queue hint — shown when user tries to start without tasks */}
@@ -245,20 +255,22 @@ export function TimerCard({
         <div className="mt-5 space-y-2">
 
           {/* Row 1: mute toggle */}
-          <div className="flex justify-center">
-            <button
-              onClick={toggleMute}
-              aria-label={muted ? 'Unmute sound' : 'Mute sound'}
-              className={[
-                'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all',
-                muted
-                  ? 'bg-black/10 opacity-60 dark:bg-white/10'
-                  : 'opacity-30 hover:bg-black/10 hover:opacity-60 dark:hover:bg-white/10',
-              ].join(' ')}
-            >
-              {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-              {muted ? 'Muted' : 'Sound on'}
-            </button>
+          <div className="flex justify-center" data-tutorial="mute-toggle">
+            <Tooltip text={muted ? 'Unmute session sounds' : 'Mute session sounds'}>
+              <button
+                onClick={toggleMute}
+                aria-label={muted ? 'Unmute sound' : 'Mute sound'}
+                className={[
+                  'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all',
+                  muted
+                    ? 'bg-black/10 opacity-60 dark:bg-white/10'
+                    : 'opacity-30 hover:bg-black/10 hover:opacity-60 dark:hover:bg-white/10',
+                ].join(' ')}
+              >
+                {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                {muted ? 'Muted' : 'Sound on'}
+              </button>
+            </Tooltip>
           </div>
 
           {/* Row 2: music pill */}
@@ -278,15 +290,17 @@ export function TimerCard({
             />
 
             {/* Music pill */}
-            <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-black/10 dark:border-white/10">
+            <div data-tutorial="music-controls" className="flex shrink-0 items-center overflow-hidden rounded-full border border-black/10 dark:border-white/10">
 
               {/* Prev track */}
               {playlist.length > 1 && (
                 <>
-                  <button onClick={prevTrack} aria-label="Previous track"
-                    className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10">
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </button>
+                  <Tooltip text="Previous track">
+                    <button onClick={prevTrack} aria-label="Previous track"
+                      className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10">
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                  </Tooltip>
                   <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
                 </>
               )}
@@ -294,23 +308,26 @@ export function TimerCard({
               {/* Play/pause */}
               {playlist.length > 0 && (
                 <>
-                  <button
-                    onClick={handleMusicPlay}
-                    aria-label={musicPlaying ? 'Pause music' : 'Play music'}
-                    className={[
-                      'px-2.5 py-1.5 transition-all',
-                      musicPlaying
-                        ? 'opacity-40 hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10'
-                        : 'bg-black/10 opacity-70 dark:bg-white/10',
-                    ].join(' ')}
-                  >
-                    {musicPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                  </button>
+                  <Tooltip text={musicPlaying ? 'Pause music' : 'Play music'}>
+                    <button
+                      onClick={handleMusicPlay}
+                      aria-label={musicPlaying ? 'Pause music' : 'Play music'}
+                      className={[
+                        'px-2.5 py-1.5 transition-all',
+                        musicPlaying
+                          ? 'opacity-40 hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10'
+                          : 'bg-black/10 opacity-70 dark:bg-white/10',
+                      ].join(' ')}
+                    >
+                      {musicPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                    </button>
+                  </Tooltip>
                   <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
                 </>
               )}
 
               {/* Track name / open playlist */}
+              <Tooltip text={showPlaylist ? 'Hide playlist' : 'Open playlist'}>
               <button
                 onClick={() => setShowPlaylist((v) => !v)}
                 aria-label={showPlaylist ? 'Hide playlist' : 'Show playlist'}
@@ -324,42 +341,49 @@ export function TimerCard({
                   ? <ChevronUp className="h-3 w-3 shrink-0" />
                   : <ChevronDown className="h-3 w-3 shrink-0" />}
               </button>
+              </Tooltip>
 
               {/* Next track */}
               {playlist.length > 1 && (
                 <>
                   <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
-                  <button onClick={nextTrack} aria-label="Next track"
-                    className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10">
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
+                  <Tooltip text="Next track">
+                    <button onClick={nextTrack} aria-label="Next track"
+                      className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10">
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </Tooltip>
                 </>
               )}
 
               {/* Repeat */}
               <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
-              <button
-                onClick={toggleLoop}
-                aria-label={loop ? 'Disable repeat' : 'Enable repeat'}
-                className={[
-                  'px-2.5 py-1.5 transition-all',
-                  loop
-                    ? 'bg-black/10 opacity-70 dark:bg-white/10'
-                    : 'opacity-40 hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10',
-                ].join(' ')}
-              >
-                <Repeat className="h-3.5 w-3.5" />
-              </button>
+              <Tooltip text={loop ? 'Disable repeat' : 'Loop playlist'}>
+                <button
+                  onClick={toggleLoop}
+                  aria-label={loop ? 'Disable repeat' : 'Enable repeat'}
+                  className={[
+                    'px-2.5 py-1.5 transition-all',
+                    loop
+                      ? 'bg-black/10 opacity-70 dark:bg-white/10'
+                      : 'opacity-40 hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10',
+                  ].join(' ')}
+                >
+                  <Repeat className="h-3.5 w-3.5" />
+                </button>
+              </Tooltip>
 
               {/* Add track */}
               <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                aria-label="Add track to playlist"
-                className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
+              <Tooltip text="Add audio file to playlist">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Add track to playlist"
+                  className="px-2.5 py-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </Tooltip>
             </div>
           </div>
 
@@ -397,13 +421,15 @@ export function TimerCard({
                         <span className="truncate text-xs">{track.name}</span>
                       </button>
                       {/* Remove */}
-                      <button
-                        onClick={() => removeTrack(i)}
-                        aria-label={`Remove ${track.name}`}
-                        className="shrink-0 opacity-0 transition-opacity hover:opacity-80 group-hover:opacity-40"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                      <Tooltip text="Remove from playlist">
+                        <button
+                          onClick={() => removeTrack(i)}
+                          aria-label={`Remove ${track.name}`}
+                          className="shrink-0 opacity-0 transition-opacity hover:opacity-80 group-hover:opacity-40"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </Tooltip>
                     </li>
                   ))}
                 </ul>
@@ -432,21 +458,25 @@ export function TimerCard({
                     {task.text || <span className="italic opacity-30">Untitled task</span>}
                   </span>
                   {/* Complete: mark done, remove from queue; reset timer only if current task */}
-                  <button
-                    onClick={() => { onQueueTaskDone(task.id); if (i === 0) reset() }}
-                    aria-label="Mark as completed"
-                    className="shrink-0 opacity-0 transition-opacity hover:opacity-80 group-hover:opacity-40"
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                  </button>
+                  <Tooltip text="Mark as done">
+                    <button
+                      onClick={() => { onQueueTaskDone(task.id); if (i === 0) reset() }}
+                      aria-label="Mark as completed"
+                      className="shrink-0 opacity-0 transition-opacity hover:opacity-80 group-hover:opacity-40"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                  </Tooltip>
                   {/* Delete: return to planned; reset timer only if current task */}
-                  <button
-                    onClick={() => { onQueueTaskReturn(task.id); if (i === 0) reset() }}
-                    aria-label="Return to planned"
-                    className="shrink-0 opacity-0 transition-opacity hover:opacity-80 group-hover:opacity-40"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                  <Tooltip text="Return to planned list">
+                    <button
+                      onClick={() => { onQueueTaskReturn(task.id); if (i === 0) reset() }}
+                      aria-label="Return to planned"
+                      className="shrink-0 opacity-0 transition-opacity hover:opacity-80 group-hover:opacity-40"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </Tooltip>
                 </li>
               ))}
             </ul>

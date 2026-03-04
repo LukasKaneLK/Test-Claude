@@ -3,8 +3,9 @@
  * Top navigation bar displaying the app title, the current timer phase badge,
  * and a light/dark theme toggle button.
  */
-import { Moon, Sun, Timer } from 'lucide-react'
+import { CircleHelp, Moon, Sun, Timer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip } from '@/components/ui/Tooltip'
 import type { Phase } from '@/features/pomodoro/engine/types'
 
 /** Human-readable labels for each phase shown in the badge. */
@@ -25,6 +26,7 @@ interface HeaderProps {
   isDark: boolean
   onToggleTheme: () => void
   phase: Phase
+  onOpenTutorial: () => void
 }
 
 /**
@@ -33,7 +35,7 @@ interface HeaderProps {
  * @param onToggleTheme - Callback invoked when the theme toggle button is clicked.
  * @param phase - The current timer phase, used to colour the badge dot.
  */
-export function Header({ isDark, onToggleTheme, phase }: HeaderProps) {
+export function Header({ isDark, onToggleTheme, phase, onOpenTutorial }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-6 py-4">
       {/* App logo / wordmark */}
@@ -48,16 +50,34 @@ export function Header({ isDark, onToggleTheme, phase }: HeaderProps) {
         <span className="text-xs font-medium opacity-70">{PHASE_LABEL[phase]}</span>
       </div>
 
+      <div className="flex items-center gap-1">
+      {/* Tutorial help button */}
+      <Tooltip text="Open tutorial" position="bottom">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenTutorial}
+          aria-label="Open tutorial"
+          className="opacity-50 hover:opacity-100"
+        >
+          <CircleHelp className="h-4 w-4" />
+        </Button>
+      </Tooltip>
+
       {/* Theme toggle: shows Sun in dark mode, Moon in light mode */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onToggleTheme}
-        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        className="opacity-70 hover:opacity-100"
-      >
-        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-      </Button>
+      <Tooltip text={isDark ? 'Switch to light mode' : 'Switch to dark mode'} position="bottom">
+        <Button
+          data-tutorial="theme-toggle"
+          variant="ghost"
+          size="icon"
+          onClick={onToggleTheme}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          className="opacity-70 hover:opacity-100"
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
+      </Tooltip>
+      </div>
     </header>
   )
 }

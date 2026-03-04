@@ -13,6 +13,7 @@ export function AddTaskCard({ onClick }: AddTaskCardProps) {
   return (
     <button
       onClick={onClick}
+      data-tutorial="add-task"
       className={[
         'w-full rounded-2xl border-2 border-dashed border-black/20 p-4',
         'text-current opacity-30 transition-all',
