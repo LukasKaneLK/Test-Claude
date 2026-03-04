@@ -14,6 +14,7 @@ import { createInitialState, timerReducer } from './engine/reducer'
 import { formatTime, getDisplayMs, getProgress, phaseLabel } from './engine/selectors'
 import type { Config } from './engine/types'
 import ukuleleUrl from '@/assets/bensound-ukulele.mp3'
+import rainUrl from '@/assets/Rain.mp3'
 import buttonPressUrl from '@/assets/Button_press.wav'
 
 export type Track = { name: string; url: string }
@@ -32,6 +33,7 @@ export function usePomodoro() {
 
   const rafRef = useRef<number | null>(null)             // handle for the active RAF loop
   const audioRef = useRef<HTMLAudioElement | null>(null)  // background focus music
+  const rainRef = useRef<HTMLAudioElement | null>(null)   // break ambient rain
   const clickRef = useRef<HTMLAudioElement | null>(null)  // button press sound
   // Ref mirrors for use inside stable callbacks (avoids stale closures).
   const musicPlayingRef = useRef(true)   // actual playback state
@@ -55,6 +57,8 @@ export function usePomodoro() {
   // Initialise audio elements once on mount.
   useEffect(() => {
     audioRef.current = new Audio(ukuleleUrl)
+    rainRef.current = new Audio(rainUrl)
+    rainRef.current.loop = true
     clickRef.current = new Audio(buttonPressUrl)
   }, [])
 
@@ -97,6 +101,7 @@ export function usePomodoro() {
     setMuted((m) => {
       const next = !m
       if (audioRef.current) audioRef.current.muted = next
+      if (rainRef.current) rainRef.current.muted = next
       return next
     })
   }, [playClick])
@@ -167,10 +172,18 @@ export function usePomodoro() {
     setMusicPlaying(false)
   }, [])
 
-  // Stop audio when phase changes away from focus or timer stops.
+  // Manage audio on phase/status changes.
   useEffect(() => {
-    if (state.phase !== 'focus' || state.status !== 'running') {
-      stopAudio()
+    const isBreakRunning = state.status === 'running' && (state.phase === 'shortBreak' || state.phase === 'longBreak')
+    const isFocusRunning = state.status === 'running' && state.phase === 'focus'
+
+    if (!isFocusRunning) stopAudio()
+
+    if (isBreakRunning) {
+      rainRef.current?.play().catch(() => undefined)
+    } else {
+      rainRef.current?.pause()
+      if (rainRef.current) rainRef.current.currentTime = 0
     }
   }, [state.phase, state.status, stopAudio])
 
