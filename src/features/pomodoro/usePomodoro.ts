@@ -20,9 +20,10 @@ import buttonPressUrl from '@/assets/Button_press.wav'
 export type Track = { name: string; url: string }
 
 export function usePomodoro() {
-  const [state, dispatch] = useReducer(timerReducer, undefined, () =>
-    createInitialState()
-  )
+  const [state, dispatch] = useReducer(timerReducer, undefined, () => {
+    const saved = localStorage.getItem('pomodoro-config')
+    return createInitialState(saved ? JSON.parse(saved) : undefined)
+  })
   // `now` is updated every animation frame while running to drive re-renders.
   const [now, setNow] = useState(() => Date.now())
   const [muted, setMuted] = useState(false)
@@ -49,10 +50,12 @@ export function usePomodoro() {
   // Timer status/phase refs — used inside stable callbacks to avoid stale closures.
   const timerStatusRef = useRef(state.status)
   const timerPhaseRef = useRef(state.phase)
+  const stateRef = useRef(state)
   useEffect(() => {
     timerStatusRef.current = state.status
     timerPhaseRef.current = state.phase
-  }, [state.status, state.phase])
+    stateRef.current = state
+  }, [state])
 
   // Initialise audio elements once on mount.
   useEffect(() => {
@@ -273,11 +276,12 @@ export function usePomodoro() {
     playTrackAt((currentTrackIndexRef.current - 1 + pl.length) % pl.length)
   }, [playTrackAt])
 
-  /** Merges partial config changes and recalculates durations where necessary. */
-  const updateConfig = useCallback(
-    (config: Partial<Config>) => dispatch({ type: 'UPDATE_CONFIG', config }),
-    []
-  )
+  /** Merges partial config changes, persists to localStorage, and recalculates durations. */
+  const updateConfig = useCallback((config: Partial<Config>) => {
+    dispatch({ type: 'UPDATE_CONFIG', config })
+    const next = { ...stateRef.current.config, ...config }
+    localStorage.setItem('pomodoro-config', JSON.stringify(next))
+  }, [])
 
   // Derive display values from current state + live `now` timestamp.
   const displayMs = getDisplayMs(state, now)

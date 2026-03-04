@@ -122,9 +122,6 @@ export function TimerCard({
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress)
   const ringColor = isDark ? RING_COLOR[phase].dark : RING_COLOR[phase].light
 
-  const currentTask = timerQueue[0] ?? null
-  const upNext = timerQueue.slice(1)
-
   return (
     <div className="mx-auto w-full max-w-sm" data-tutorial="timer-card">
       {/* Glass card — highlighted with a ring when a task is dragged over */}

@@ -3,7 +3,7 @@
  * Top navigation bar displaying the app title, the current timer phase badge,
  * and a light/dark theme toggle button.
  */
-import { CircleHelp, Moon, Sun, Timer } from 'lucide-react'
+import { CircleHelp, Moon, Settings, Sun, Timer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import type { Phase } from '@/features/pomodoro/engine/types'
@@ -27,6 +27,7 @@ interface HeaderProps {
   onToggleTheme: () => void
   phase: Phase
   onOpenTutorial: () => void
+  onOpenSettings: () => void
 }
 
 /**
@@ -35,7 +36,7 @@ interface HeaderProps {
  * @param onToggleTheme - Callback invoked when the theme toggle button is clicked.
  * @param phase - The current timer phase, used to colour the badge dot.
  */
-export function Header({ isDark, onToggleTheme, phase, onOpenTutorial }: HeaderProps) {
+export function Header({ isDark, onToggleTheme, phase, onOpenTutorial, onOpenSettings }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-6 py-4">
       {/* App logo / wordmark */}
@@ -51,6 +52,19 @@ export function Header({ isDark, onToggleTheme, phase, onOpenTutorial }: HeaderP
       </div>
 
       <div className="flex items-center gap-1">
+      {/* Settings button */}
+      <Tooltip text="Settings" position="bottom">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenSettings}
+          aria-label="Open settings"
+          className="opacity-50 hover:opacity-100"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </Tooltip>
+
       {/* Tutorial help button */}
       <Tooltip text="Open tutorial" position="bottom">
         <Button
