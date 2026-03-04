@@ -244,7 +244,7 @@ export function TimerCard({
           />
 
           {/* Music tab — grouped pill containing file picker, play/pause, and repeat */}
-          <div className="flex items-center overflow-hidden rounded-full border border-black/10 dark:border-white/10">
+          <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-black/10 dark:border-white/10">
             {/* File picker */}
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -253,7 +253,7 @@ export function TimerCard({
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10"
             >
               <Music className="h-3.5 w-3.5 shrink-0" />
-              <span className="max-w-[9rem] truncate">
+              <span className="max-w-[6rem] truncate">
                 {customMusicName ?? 'Music'}
               </span>
             </button>
