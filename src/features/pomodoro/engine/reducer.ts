@@ -43,12 +43,13 @@ function nextPhase(state: TimerState): { phase: Phase; completedSessions: number
  * Builds the default initial timer state.
  * @param config - Optional config override; defaults to DEFAULT_CONFIG.
  */
-export function createInitialState(config: Config = DEFAULT_CONFIG): TimerState {
+export function createInitialState(configOverride?: Partial<Config>): TimerState {
+  const config = { ...DEFAULT_CONFIG, ...configOverride }
   return {
     phase: 'focus',
     status: 'idle',
     endTime: null,
-    remainingMs: config.focusMinutes * 60_000,
+    remainingMs: phaseDurationMs('focus', config),
     completedSessions: 0,
     config,
   }

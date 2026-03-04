@@ -19,6 +19,7 @@ import { Footer } from '@/components/Footer'
 import { TimerCard } from '@/components/TimerCard'
 import { PhaseCompletePopup, type PopupKind } from '@/components/PhaseCompletePopup'
 import { TutorialOverlay } from '@/components/TutorialOverlay'
+import { SettingsDialog } from '@/components/SettingsDialog'
 import { TaskColumn } from '@/components/tasks/TaskColumn'
 import { TaskCard } from '@/components/tasks/TaskCard'
 import { usePomodoro } from '@/features/pomodoro/usePomodoro'
@@ -75,6 +76,8 @@ export function App() {
   // Wrap skip so the popup effect can distinguish a manual skip from a natural completion.
   const skippedRef = useRef(false)
   const wrappedSkip = useCallback(() => { skippedRef.current = true; skip() }, [skip])
+
+  const [showSettings, setShowSettings] = useState(false)
 
   // Show tutorial on first visit; can be re-opened via the header help button.
   const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('tutorial-seen'))
@@ -282,7 +285,7 @@ export function App() {
         />
 
         <div className="relative z-10 flex min-h-screen flex-col">
-          <Header isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} phase={phase} onOpenTutorial={() => setShowTutorial(true)} />
+          <Header isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} phase={phase} onOpenTutorial={() => setShowTutorial(true)} onOpenSettings={() => setShowSettings(true)} />
 
           {/* 3-column layout: tasks | timer | tasks */}
           <main className="flex flex-1 items-center justify-center px-4 py-8">
@@ -328,6 +331,14 @@ export function App() {
 
       {/* Phase-complete popup */}
       {popup && <PhaseCompletePopup kind={popup} onClose={() => setPopup(null)} />}
+
+      {/* Settings dialog */}
+      <SettingsDialog
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        config={timer.config}
+        onUpdate={timer.updateConfig}
+      />
 
       {/* Tutorial overlay */}
       {showTutorial && <TutorialOverlay onDone={closeTutorial} />}
