@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createInitialState, timerReducer } from './reducer'
 import { DEFAULT_CONFIG } from './types'
 import type { TimerState } from './types'
