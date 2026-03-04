@@ -5,8 +5,8 @@
  */
 export function Footer() {
   return (
-    <footer className="px-6 py-4 text-center text-xs opacity-40">
-      <span>
+    <footer className="px-6 py-4 text-center text-xs opacity-40 space-y-1.5">
+      <div>
         <kbd className="rounded border border-current px-1.5 py-0.5 font-mono text-[10px]">Space</kbd>
         {' '}start/pause
         {' · '}
@@ -15,7 +15,10 @@ export function Footer() {
         {' · '}
         <kbd className="rounded border border-current px-1.5 py-0.5 font-mono text-[10px]">S</kbd>
         {' '}skip
-      </span>
+      </div>
+      <div>
+        Pomodoro Timer — created for personal productivity purposes &nbsp;·&nbsp; &copy; {new Date().getFullYear()} Andrii Khudiashov
+      </div>
     </footer>
   )
 }

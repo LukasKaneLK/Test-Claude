@@ -7,6 +7,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Check, GripVertical, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
+import { Tooltip } from '@/components/ui/Tooltip'
 import type { Task } from '@/features/tasks/types'
 
 interface TaskCardProps {
@@ -56,14 +57,16 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
     >
       <div className="flex items-start gap-2">
         {/* Drag handle */}
-        <button
-          {...(isOverlay ? {} : { ...attributes, ...listeners })}
-          className="mt-0.5 cursor-grab touch-none text-current opacity-20 hover:opacity-50 active:cursor-grabbing"
-          aria-label="Drag to reorder"
-          tabIndex={-1}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
+        <Tooltip text="Drag to reorder or drop onto timer">
+          <button
+            {...(isOverlay ? {} : { ...attributes, ...listeners })}
+            className="mt-0.5 cursor-grab touch-none text-current opacity-20 hover:opacity-50 active:cursor-grabbing"
+            aria-label="Drag to reorder"
+            tabIndex={-1}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        </Tooltip>
 
         {/* Editable task text */}
         <textarea
@@ -87,22 +90,26 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
         />
 
         {/* Complete button — visible on hover */}
-        <button
-          onClick={() => onUpdate(task.id, { done: true })}
-          className="self-center shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
-          aria-label="Mark task complete"
-        >
-          <Check className="h-4 w-4" />
-        </button>
+        <Tooltip text="Mark as done">
+          <button
+            onClick={() => onUpdate(task.id, { done: true })}
+            className="self-center shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
+            aria-label="Mark task complete"
+          >
+            <Check className="h-4 w-4" />
+          </button>
+        </Tooltip>
 
         {/* Delete button — visible on hover */}
-        <button
-          onClick={() => onDelete(task.id)}
-          className="self-center shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
-          aria-label="Delete task"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <Tooltip text="Delete task">
+          <button
+            onClick={() => onDelete(task.id)}
+            className="self-center shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
+            aria-label="Delete task"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </Tooltip>
       </div>
     </div>
   )
