@@ -21,6 +21,7 @@ import { PhaseCompletePopup, type PopupKind } from '@/components/PhaseCompletePo
 import { TutorialOverlay } from '@/components/TutorialOverlay'
 import { SettingsDialog } from '@/components/SettingsDialog'
 import { TaskColumn } from '@/components/tasks/TaskColumn'
+import { MobilePlannedColumn } from '@/components/tasks/MobilePlannedColumn'
 import { TaskCard } from '@/components/tasks/TaskCard'
 import { usePomodoro } from '@/features/pomodoro/usePomodoro'
 import type { Phase } from '@/features/pomodoro/engine/types'
@@ -287,22 +288,24 @@ export function App() {
         <div className="relative z-10 flex min-h-screen flex-col">
           <Header isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} phase={phase} onOpenTutorial={() => setShowTutorial(true)} onOpenSettings={() => setShowSettings(true)} />
 
-          {/* 3-column layout: tasks | timer | tasks */}
+          {/* Responsive layout: single column on mobile, 3-column on md+ */}
           <main className="flex flex-1 items-center justify-center px-4 py-8">
-            <div className="grid w-full max-w-5xl grid-cols-[1fr_auto_1fr] items-start gap-6">
+            <div className="grid w-full max-w-5xl grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_auto_1fr]">
 
-              {/* Left task column */}
-              <TaskColumn
-                id="left-col"
-                tasks={leftTasks}
-                newTaskId={newTaskId}
-                onAdd={() => addTask('left')}
-                onUpdate={updateTask}
-                onDelete={deleteTask}
-              />
+              {/* Desktop only: left task column */}
+              <div className="order-2 hidden xl:order-1 xl:block">
+                <TaskColumn
+                  id="left-col"
+                  tasks={leftTasks}
+                  newTaskId={newTaskId}
+                  onAdd={() => addTask('left')}
+                  onUpdate={updateTask}
+                  onDelete={deleteTask}
+                />
+              </div>
 
-              {/* Timer — droppable zone; tasks dragged here join the queue */}
-              <div className="flex self-center justify-center">
+              {/* Timer — first on mobile, centre on desktop */}
+              <div className="order-1 flex justify-center self-center xl:order-2">
                 <TimerCard
                   {...timer}
                   skip={wrappedSkip}
@@ -313,15 +316,28 @@ export function App() {
                 />
               </div>
 
-              {/* Right task column */}
-              <TaskColumn
-                id="right-col"
-                tasks={rightTasks}
-                newTaskId={newTaskId}
-                onAdd={() => addTask('right')}
-                onUpdate={updateTask}
-                onDelete={deleteTask}
-              />
+              {/* Desktop only: right task column */}
+              <div className="order-3 hidden xl:block">
+                <TaskColumn
+                  id="right-col"
+                  tasks={rightTasks}
+                  newTaskId={newTaskId}
+                  onAdd={() => addTask('right')}
+                  onUpdate={updateTask}
+                  onDelete={deleteTask}
+                />
+              </div>
+
+              {/* Mobile/tablet only: single merged Planned column */}
+              <div className="order-2 xl:hidden">
+                <MobilePlannedColumn
+                  tasks={[...leftTasks, ...rightTasks]}
+                  newTaskId={newTaskId}
+                  onAdd={() => addTask('left')}
+                  onUpdate={updateTask}
+                  onDelete={deleteTask}
+                />
+              </div>
             </div>
           </main>
 
