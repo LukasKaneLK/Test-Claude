@@ -75,6 +75,7 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
             e.target.style.height = 'auto'
             e.target.style.height = e.target.scrollHeight + 'px'
           }}
+          onBlur={() => { if (!task.text.trim()) onDelete(task.id) }}
           placeholder="Write your task…"
           rows={1}
           className={[
