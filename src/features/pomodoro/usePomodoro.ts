@@ -6,6 +6,7 @@
  *    accurate time updates without relying on setInterval drift.
  *  - Dispatches COMPLETE_PHASE when wall-clock time reaches endTime.
  *  - Manages background audio (focus music + button click sounds).
+ *  - Manages a user playlist of custom audio tracks.
  *  - Exposes a stable public API of actions and derived display values.
  */
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
@@ -14,6 +15,8 @@ import { formatTime, getDisplayMs, getProgress, phaseLabel } from './engine/sele
 import type { Config } from './engine/types'
 import ukuleleUrl from '@/assets/bensound-ukulele.mp3'
 import buttonPressUrl from '@/assets/Button_press.wav'
+
+export type Track = { name: string; url: string }
 
 export function usePomodoro() {
   const [state, dispatch] = useReducer(timerReducer, undefined, () =>
@@ -24,14 +27,23 @@ export function usePomodoro() {
   const [muted, setMuted] = useState(false)
   const [loop, setLoop] = useState(false)
   const [musicPlaying, setMusicPlaying] = useState(true)
-  const [customMusicName, setCustomMusicName] = useState<string | null>(null)
-  const rafRef = useRef<number | null>(null)            // handle for the active RAF loop
-  const audioRef = useRef<HTMLAudioElement | null>(null) // background focus music
-  const clickRef = useRef<HTMLAudioElement | null>(null) // button press sound
-  const customMusicUrlRef = useRef<string | null>(null)  // object URL for custom track
-  const musicPlayingRef = useRef(true)                   // ref mirror for use in callbacks
+  const [playlist, setPlaylist] = useState<Track[]>([])
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
 
-  // Initialise audio elements once on mount (avoids recreating them on every render).
+  const rafRef = useRef<number | null>(null)             // handle for the active RAF loop
+  const audioRef = useRef<HTMLAudioElement | null>(null)  // background focus music
+  const clickRef = useRef<HTMLAudioElement | null>(null)  // button press sound
+  // Ref mirrors for use inside stable callbacks (avoids stale closures).
+  const musicPlayingRef = useRef(true)
+  const loopRef = useRef(false)
+  const playlistRef = useRef<Track[]>([])
+  const currentTrackIndexRef = useRef(0)
+
+  // Keep refs in sync with state.
+  useEffect(() => { playlistRef.current = playlist }, [playlist])
+  useEffect(() => { currentTrackIndexRef.current = currentTrackIndex }, [currentTrackIndex])
+
+  // Initialise audio elements once on mount.
   useEffect(() => {
     audioRef.current = new Audio(ukuleleUrl)
     clickRef.current = new Audio(buttonPressUrl)
@@ -45,11 +57,8 @@ export function usePomodoro() {
   }, [muted])
 
   // RAF-based tick loop: only active while the timer is running.
-  // Using requestAnimationFrame instead of setInterval avoids timer drift and
-  // gives ~60 fps updates, keeping the countdown display perfectly smooth.
   useEffect(() => {
     if (state.status !== 'running') {
-      // Cancel any existing loop when the timer stops or pauses.
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
@@ -60,13 +69,10 @@ export function usePomodoro() {
     const tick = () => {
       const t = Date.now()
       setNow(t)
-
-      // Check if phase completed
       if (state.endTime !== null && t >= state.endTime) {
         dispatch({ type: 'COMPLETE_PHASE' })
-        return  // stop scheduling further frames; the reducer will change status
+        return
       }
-
       rafRef.current = requestAnimationFrame(tick)
     }
 
@@ -86,10 +92,53 @@ export function usePomodoro() {
     })
   }, [playClick])
 
+  /**
+   * Loads the track at the given playlist index into the audio element.
+   * If musicPlaying is true and the audio is unmuted, starts playback.
+   */
+  const playTrackAt = useCallback((index: number) => {
+    const pl = playlistRef.current
+    const track = pl[index]
+    if (!track || !audioRef.current) return
+    currentTrackIndexRef.current = index
+    setCurrentTrackIndex(index)
+    audioRef.current.src = track.url
+    audioRef.current.currentTime = 0
+    if (musicPlayingRef.current && !audioRef.current.muted) {
+      audioRef.current.play().catch(() => undefined)
+    }
+  }, [])
+
+  // Auto-advance to the next track when the current one ends.
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    const handleEnded = () => {
+      const pl = playlistRef.current
+      if (pl.length === 0) return
+      const idx = currentTrackIndexRef.current
+      const isLast = idx === pl.length - 1
+      if (isLast && !loopRef.current) {
+        // End of playlist, loop off → stop.
+        musicPlayingRef.current = false
+        setMusicPlaying(false)
+        return
+      }
+      playTrackAt((idx + 1) % pl.length)
+    }
+    audio.addEventListener('ended', handleEnded)
+    return () => audio.removeEventListener('ended', handleEnded)
+  }, [playTrackAt])
+
   /** Starts a fresh focus session and begins playing background music. */
   const start = useCallback(() => {
     playClick()
     if (audioRef.current && !audioRef.current.muted && musicPlayingRef.current) {
+      const pl = playlistRef.current
+      if (pl.length > 0) {
+        const track = pl[currentTrackIndexRef.current] ?? pl[0]
+        audioRef.current.src = track.url
+      }
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => undefined)
     }
@@ -104,7 +153,7 @@ export function usePomodoro() {
     }
   }, [])
 
-  // Stop audio when phase changes away from focus or timer stops
+  // Stop audio when phase changes away from focus or timer stops.
   useEffect(() => {
     if (state.phase !== 'focus' || state.status !== 'running') {
       stopAudio()
@@ -121,11 +170,12 @@ export function usePomodoro() {
   }, [playClick, state.phase])
   const reset = useCallback(() => { playClick(); dispatch({ type: 'RESET' }) }, [playClick])
   const skip = useCallback(() => { playClick(); dispatch({ type: 'SKIP' }) }, [playClick])
-  /** Toggles whether the music track repeats when it ends. */
+
+  /** Toggles playlist looping (wraps back to first track at end when on). */
   const toggleLoop = useCallback(() => {
     setLoop((l) => {
       const next = !l
-      if (audioRef.current) audioRef.current.loop = next
+      loopRef.current = next
       return next
     })
   }, [])
@@ -145,21 +195,40 @@ export function usePomodoro() {
     }
   }, [])
 
-  /** Loads a user-selected audio file as the background music track. */
-  const loadCustomMusic = useCallback((file: File) => {
-    if (customMusicUrlRef.current) {
-      URL.revokeObjectURL(customMusicUrlRef.current)
-    }
+  /** Adds a file to the end of the playlist. */
+  const addTrack = useCallback((file: File) => {
     const url = URL.createObjectURL(file)
-    customMusicUrlRef.current = url
-    setCustomMusicName(file.name)
-    if (audioRef.current) {
-      const wasMuted = audioRef.current.muted
-      audioRef.current.pause()
-      audioRef.current.src = url
-      audioRef.current.muted = wasMuted
-    }
+    setPlaylist((prev) => [...prev, { name: file.name, url }])
   }, [])
+
+  /** Removes the track at the given index, revoking its object URL. */
+  const removeTrack = useCallback((index: number) => {
+    setPlaylist((prev) => {
+      if (index < 0 || index >= prev.length) return prev
+      URL.revokeObjectURL(prev[index].url)
+      return prev.filter((_, i) => i !== index)
+    })
+    // If the removed track was before (or at) the current index, shift index back.
+    setCurrentTrackIndex((prev) => {
+      const next = index < prev ? prev - 1 : index === prev ? 0 : prev
+      currentTrackIndexRef.current = next
+      return next
+    })
+  }, [])
+
+  /** Advances to the next track in the playlist (wraps around). */
+  const nextTrack = useCallback(() => {
+    const pl = playlistRef.current
+    if (pl.length === 0) return
+    playTrackAt((currentTrackIndexRef.current + 1) % pl.length)
+  }, [playTrackAt])
+
+  /** Goes back to the previous track in the playlist (wraps around). */
+  const prevTrack = useCallback(() => {
+    const pl = playlistRef.current
+    if (pl.length === 0) return
+    playTrackAt((currentTrackIndexRef.current - 1 + pl.length) % pl.length)
+  }, [playTrackAt])
 
   /** Merges partial config changes and recalculates durations where necessary. */
   const updateConfig = useCallback(
@@ -179,7 +248,6 @@ export function usePomodoro() {
     return () => { document.title = 'Pomodoro' }
   }, [displayMs, state.phase, state.status])
 
-  // Return the public API consumed by App and TimerCard.
   return {
     phase: state.phase,
     status: state.status,
@@ -196,8 +264,15 @@ export function usePomodoro() {
     reset,
     skip,
     updateConfig,
-    loadCustomMusic,
-    customMusicName,
+    // Playlist
+    playlist,
+    currentTrackIndex,
+    addTrack,
+    removeTrack,
+    playTrackAt,
+    nextTrack,
+    prevTrack,
+    // Music controls
     loop,
     toggleLoop,
     musicPlaying,
