@@ -9,6 +9,7 @@ import {
   DndContext,
   DragOverlay,
   closestCenter,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
@@ -36,6 +37,32 @@ const BLOB: Record<Phase, { light: string; dark: string }> = {
   longBreak:  { light: '#a5b4fc', dark: '#4338ca' },
 }
 
+/**
+ * Custom collision detection: if the pointer is directly over the timer drop zone,
+ * prioritise it over any nearby sortable items (which closestCenter would pick instead).
+ * Falls back to closestCenter for normal column reordering.
+ */
+const collisionDetection: CollisionDetection = (args) => {
+  // Check rect intersection with the timer droppable manually (droppableContainers is a Map).
+  const timerRect = args.droppableRects.get('timer-drop')
+  console.log('[DnD] timerRect:', timerRect, '| all rects:', [...args.droppableRects.keys()])
+  if (timerRect) {
+    const { top, left, bottom, right } = args.collisionRect
+    const intersects =
+      left < timerRect.right &&
+      right > timerRect.left &&
+      top < timerRect.bottom &&
+      bottom > timerRect.top
+    if (intersects) {
+      console.log('[DnD] Collision: timer-drop (rect intersect)')
+      return [{ id: 'timer-drop' }]
+    }
+  }
+  const result = closestCenter(args)
+  console.log('[DnD] Collision: closestCenter ->', result[0]?.id ?? 'none')
+  return result
+}
+
 /** Load tasks from localStorage, returning an empty array on failure. */
 function loadTasks(key: string): Task[] {
   try {
@@ -60,6 +87,9 @@ export function App() {
   const [leftTasks, setLeftTasks] = useState<Task[]>(() => loadTasks('tasks-left'))
   const [rightTasks, setRightTasks] = useState<Task[]>(() => loadTasks('tasks-right'))
 
+  // Tasks queued into the timer by drag-and-drop.
+  const [timerQueue, setTimerQueue] = useState<Task[]>(() => loadTasks('tasks-queue'))
+
   // Track the id of the last added task so its textarea can be auto-focused.
   const [newTaskId, setNewTaskId] = useState<string | null>(null)
 
@@ -67,13 +97,9 @@ export function App() {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
 
   // Persist tasks whenever they change.
-  useEffect(() => {
-    localStorage.setItem('tasks-left', JSON.stringify(leftTasks))
-  }, [leftTasks])
-
-  useEffect(() => {
-    localStorage.setItem('tasks-right', JSON.stringify(rightTasks))
-  }, [rightTasks])
+  useEffect(() => { localStorage.setItem('tasks-left', JSON.stringify(leftTasks)) }, [leftTasks])
+  useEffect(() => { localStorage.setItem('tasks-right', JSON.stringify(rightTasks)) }, [rightTasks])
+  useEffect(() => { localStorage.setItem('tasks-queue', JSON.stringify(timerQueue)) }, [timerQueue])
 
   // Sync the `dark` class on <html> and persist the preference whenever it changes.
   useEffect(() => {
@@ -122,6 +148,21 @@ export function App() {
     setRightTasks((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
+  // Remove a task from the timer queue when the user marks it done.
+  const handleQueueTaskDone = useCallback((id: string) => {
+    setTimerQueue((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
+  // Remove a task from the queue and return it to its original planned column.
+  const handleQueueTaskReturn = useCallback((id: string) => {
+    const task = timerQueue.find((t) => t.id === id)
+    if (!task) return
+    const { sourceColumn, ...restored } = task
+    setTimerQueue((prev) => prev.filter((t) => t.id !== id))
+    if (sourceColumn === 'right') setRightTasks((r) => [...r, restored])
+    else setLeftTasks((l) => [...l, restored])
+  }, [timerQueue])
+
   // --- Drag handlers ---
 
   function handleDragStart({ active }: DragStartEvent) {
@@ -129,6 +170,7 @@ export function App() {
       leftTasks.find((t) => t.id === active.id) ??
       rightTasks.find((t) => t.id === active.id) ??
       null
+    console.log('[DnD] Drag start:', task ?? active.id)
     setActiveTask(task)
     setNewTaskId(null) // clear auto-focus while dragging
   }
@@ -136,6 +178,28 @@ export function App() {
   function handleDragEnd({ active, over }: DragEndEvent) {
     setActiveTask(null)
     if (!over || active.id === over.id) return
+
+    // --- Drop onto timer: move task into queue and start timer ---
+    if (over.id === 'timer-drop') {
+      console.log('[DnD] Dropped on timer, active.id:', active.id)
+      const activeId = String(active.id)
+      const task =
+        leftTasks.find((t) => t.id === activeId) ??
+        rightTasks.find((t) => t.id === activeId)
+      if (task) {
+        const sourceColumn = leftTasks.some((t) => t.id === activeId) ? 'left' : 'right'
+        console.log('[DnD] Task added to queue:', task)
+        setLeftTasks((prev) => prev.filter((t) => t.id !== activeId))
+        setRightTasks((prev) => prev.filter((t) => t.id !== activeId))
+        setTimerQueue((prev) => [...prev, { ...task, sourceColumn }])
+        // Auto-start only when the first task enters the queue.
+        if (timerQueue.length === 0 && timer.status === 'idle') timer.start()
+      } else {
+        console.warn('[DnD] Dropped on timer but task not found for id:', activeId)
+      }
+      return
+    }
+    console.log('[DnD] Drop target:', over.id, '| active:', active.id)
 
     const activeId = String(active.id)
     const overId = String(over.id)
@@ -184,9 +248,10 @@ export function App() {
 
   return (
     <DndContext
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => { setActiveTask(null) }}
     >
       <div
         className="relative flex min-h-screen flex-col overflow-hidden"
@@ -218,9 +283,15 @@ export function App() {
                 onDelete={deleteTask}
               />
 
-              {/* Timer — centred horizontally and vertically within the column */}
+              {/* Timer — droppable zone; tasks dragged here join the queue */}
               <div className="flex self-center justify-center">
-                <TimerCard {...timer} isDark={isDark} />
+                <TimerCard
+                  {...timer}
+                  isDark={isDark}
+                  timerQueue={timerQueue}
+                  onQueueTaskDone={handleQueueTaskDone}
+                  onQueueTaskReturn={handleQueueTaskReturn}
+                />
               </div>
 
               {/* Right task column */}

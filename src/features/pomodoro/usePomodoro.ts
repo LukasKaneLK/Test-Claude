@@ -107,7 +107,13 @@ export function usePomodoro() {
   }, [state.phase, state.status, stopAudio])
 
   const pause = useCallback(() => { playClick(); dispatch({ type: 'PAUSE' }) }, [playClick])
-  const resume = useCallback(() => { playClick(); dispatch({ type: 'RESUME' }) }, [playClick])
+  const resume = useCallback(() => {
+    playClick()
+    if (audioRef.current && !audioRef.current.muted && state.phase === 'focus') {
+      audioRef.current.play().catch(() => undefined)
+    }
+    dispatch({ type: 'RESUME' })
+  }, [playClick, state.phase])
   const reset = useCallback(() => { playClick(); dispatch({ type: 'RESET' }) }, [playClick])
   const skip = useCallback(() => { playClick(); dispatch({ type: 'SKIP' }) }, [playClick])
   /** Merges partial config changes and recalculates durations where necessary. */
