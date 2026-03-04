@@ -72,6 +72,10 @@ export function App() {
   const timer = usePomodoro()
   const { phase, status, start, pause, resume, reset, skip } = timer
 
+  // Wrap skip so the popup effect can distinguish a manual skip from a natural completion.
+  const skippedRef = useRef(false)
+  const wrappedSkip = useCallback(() => { skippedRef.current = true; skip() }, [skip])
+
   // Show tutorial on first visit; can be re-opened via the header help button.
   const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('tutorial-seen'))
   const closeTutorial = () => {
@@ -79,12 +83,13 @@ export function App() {
     setShowTutorial(false)
   }
 
-  // Detect phase transitions to show the appropriate popup.
+  // Detect natural phase completions (not manual skips) to show the popup.
   const [popup, setPopup] = useState<PopupKind | null>(null)
   const prevPhaseRef = useRef<Phase>(phase)
   useEffect(() => {
     const prev = prevPhaseRef.current
     prevPhaseRef.current = phase
+    if (skippedRef.current) { skippedRef.current = false; return }
     if (prev === 'focus' && (phase === 'shortBreak' || phase === 'longBreak')) {
       setPopup('rest')
     } else if ((prev === 'shortBreak' || prev === 'longBreak') && phase === 'focus') {
@@ -136,7 +141,7 @@ export function App() {
       } else if (e.key === 'r' || e.key === 'R') {
         reset()
       } else if (e.key === 's' || e.key === 'S') {
-        skip()
+        wrappedSkip()
       }
     }
     window.addEventListener('keydown', handler)
@@ -297,6 +302,7 @@ export function App() {
               <div className="flex self-center justify-center">
                 <TimerCard
                   {...timer}
+                  skip={wrappedSkip}
                   isDark={isDark}
                   timerQueue={timerQueue}
                   onQueueTaskDone={handleQueueTaskDone}
