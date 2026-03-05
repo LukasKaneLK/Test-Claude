@@ -4,12 +4,14 @@
  * Clicking it creates a new task in the column.
  */
 import { Plus } from 'lucide-react'
+import { useLanguage } from '@/i18n/LanguageContext'
 
 interface AddTaskCardProps {
   onClick: () => void
 }
 
 export function AddTaskCard({ onClick }: AddTaskCardProps) {
+  const { t } = useLanguage()
   return (
     <button
       onClick={onClick}
@@ -21,11 +23,11 @@ export function AddTaskCard({ onClick }: AddTaskCardProps) {
         'dark:border-white/20 dark:hover:border-white/40 dark:hover:bg-white/5',
         'active:scale-95',
       ].join(' ')}
-      aria-label="Add new task"
+      aria-label={t.addTask}
     >
       <div className="flex items-center justify-center gap-2">
         <Plus className="h-5 w-5" />
-        <span className="text-sm font-medium">Add task</span>
+        <span className="text-sm font-medium">{t.addTask}</span>
       </div>
     </button>
   )
