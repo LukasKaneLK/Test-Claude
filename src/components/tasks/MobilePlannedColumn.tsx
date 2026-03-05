@@ -8,7 +8,6 @@ import { useEffect, useRef } from 'react'
 import { AddTaskCard } from './AddTaskCard'
 import { Tooltip } from '@/components/ui/Tooltip'
 import type { Task } from '@/features/tasks/types'
-import { useLanguage } from '@/i18n/LanguageContext'
 
 interface MobilePlannedColumnProps {
   tasks: Task[]
@@ -29,7 +28,6 @@ function MobileTaskCard({
   onUpdate: (id: string, changes: Partial<Task>) => void
   onDelete: (id: string) => void
 }) {
-  const { t } = useLanguage()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -52,29 +50,29 @@ function MobileTaskCard({
             e.target.style.height = e.target.scrollHeight + 'px'
           }}
           onBlur={() => { if (!task.text.trim()) onDelete(task.id) }}
-          placeholder={t.writeTask}
+          placeholder="Write your task…"
           rows={1}
           className={[
             'flex-1 resize-none overflow-hidden bg-transparent text-sm leading-relaxed outline-none',
             'placeholder:opacity-30',
             task.done ? 'line-through opacity-40' : '',
           ].join(' ')}
-          aria-label={t.writeTask}
+          aria-label="Task description"
         />
-        <Tooltip text={t.tooltipMarkDone}>
+        <Tooltip text="Mark as done">
           <button
             onClick={() => onUpdate(task.id, { done: true })}
             className="shrink-0 self-center text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
-            aria-label={t.tooltipMarkDone}
+            aria-label="Mark task complete"
           >
             <Check className="h-4 w-4" />
           </button>
         </Tooltip>
-        <Tooltip text={t.tooltipDeleteTask}>
+        <Tooltip text="Delete task">
           <button
             onClick={() => onDelete(task.id)}
             className="shrink-0 self-center text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
-            aria-label={t.tooltipDeleteTask}
+            aria-label="Delete task"
           >
             <X className="h-4 w-4" />
           </button>
@@ -91,12 +89,11 @@ export function MobilePlannedColumn({
   onUpdate,
   onDelete,
 }: MobilePlannedColumnProps) {
-  const { t } = useLanguage()
   return (
     <div className="flex flex-col gap-3">
       <div className="flex">
         <span className="rounded-lg bg-black/8 px-3 py-1 text-xs font-semibold uppercase tracking-widest opacity-50 dark:bg-white/8">
-          {t.planned}
+          Planned
         </span>
       </div>
       <div className="flex flex-col gap-3">

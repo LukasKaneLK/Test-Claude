@@ -7,7 +7,13 @@ import { CircleHelp, Moon, Settings, Sun, Timer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import type { Phase } from '@/features/pomodoro/engine/types'
-import { useLanguage } from '@/i18n/LanguageContext'
+
+/** Human-readable labels for each phase shown in the badge. */
+const PHASE_LABEL: Record<Phase, string> = {
+  focus: 'Focus',
+  shortBreak: 'Short Break',
+  longBreak: 'Long Break',
+}
 
 /** Tailwind colour classes for the coloured dot inside the phase badge. */
 const PHASE_DOT: Record<Phase, string> = {
@@ -24,15 +30,13 @@ interface HeaderProps {
   onOpenSettings: () => void
 }
 
+/**
+ * Renders the application header.
+ * @param isDark - Whether dark mode is currently active.
+ * @param onToggleTheme - Callback invoked when the theme toggle button is clicked.
+ * @param phase - The current timer phase, used to colour the badge dot.
+ */
 export function Header({ isDark, onToggleTheme, phase, onOpenTutorial, onOpenSettings }: HeaderProps) {
-  const { t } = useLanguage()
-
-  const PHASE_LABEL: Record<Phase, string> = {
-    focus: t.phaseFocus,
-    shortBreak: t.phaseShortBreak,
-    longBreak: t.phaseLongBreak,
-  }
-
   return (
     <header className="flex items-center justify-between px-6 py-4">
       {/* App logo / wordmark */}
@@ -49,12 +53,12 @@ export function Header({ isDark, onToggleTheme, phase, onOpenTutorial, onOpenSet
 
       <div className="flex items-center gap-1">
       {/* Settings button */}
-      <Tooltip text={t.tooltipSettings} position="bottom">
+      <Tooltip text="Settings" position="bottom">
         <Button
           variant="ghost"
           size="icon"
           onClick={onOpenSettings}
-          aria-label={t.tooltipSettings}
+          aria-label="Open settings"
           className="opacity-50 hover:opacity-100"
         >
           <Settings className="h-4 w-4" />
@@ -62,12 +66,12 @@ export function Header({ isDark, onToggleTheme, phase, onOpenTutorial, onOpenSet
       </Tooltip>
 
       {/* Tutorial help button */}
-      <Tooltip text={t.tooltipTutorial} position="bottom">
+      <Tooltip text="Open tutorial" position="bottom">
         <Button
           variant="ghost"
           size="icon"
           onClick={onOpenTutorial}
-          aria-label={t.tooltipTutorial}
+          aria-label="Open tutorial"
           className="opacity-50 hover:opacity-100"
         >
           <CircleHelp className="h-4 w-4" />
@@ -75,13 +79,13 @@ export function Header({ isDark, onToggleTheme, phase, onOpenTutorial, onOpenSet
       </Tooltip>
 
       {/* Theme toggle: shows Sun in dark mode, Moon in light mode */}
-      <Tooltip text={isDark ? t.tooltipLightMode : t.tooltipDarkMode} position="bottom">
+      <Tooltip text={isDark ? 'Switch to light mode' : 'Switch to dark mode'} position="bottom">
         <Button
           data-tutorial="theme-toggle"
           variant="ghost"
           size="icon"
           onClick={onToggleTheme}
-          aria-label={isDark ? t.tooltipLightMode : t.tooltipDarkMode}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           className="opacity-70 hover:opacity-100"
         >
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
