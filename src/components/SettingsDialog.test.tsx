@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { SettingsDialog } from './SettingsDialog'
 import { DEFAULT_CONFIG } from '@/features/pomodoro/engine/types'
 import type { Config } from '@/features/pomodoro/engine/types'
-import { LanguageProvider } from '@/i18n/LanguageContext'
 
 const baseConfig: Config = { ...DEFAULT_CONFIG }
 
@@ -12,15 +11,13 @@ function renderDialog(props?: Partial<React.ComponentProps<typeof SettingsDialog
   const onClose = vi.fn()
   const onUpdate = vi.fn()
   render(
-    <LanguageProvider>
-      <SettingsDialog
-        open={true}
-        onClose={onClose}
-        config={baseConfig}
-        onUpdate={onUpdate}
-        {...props}
-      />
-    </LanguageProvider>
+    <SettingsDialog
+      open={true}
+      onClose={onClose}
+      config={baseConfig}
+      onUpdate={onUpdate}
+      {...props}
+    />
   )
   return { onClose, onUpdate }
 }

@@ -9,7 +9,6 @@ import { Check, GripVertical, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Tooltip } from '@/components/ui/Tooltip'
 import type { Task } from '@/features/tasks/types'
-import { useLanguage } from '@/i18n/LanguageContext'
 
 interface TaskCardProps {
   task: Task
@@ -22,7 +21,6 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: TaskCardProps) {
-  const { t } = useLanguage()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
   })
@@ -59,11 +57,11 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
     >
       <div className="flex items-start gap-2">
         {/* Drag handle */}
-        <Tooltip text={t.tooltipDragReorder}>
+        <Tooltip text="Drag to reorder or drop onto timer">
           <button
             {...(isOverlay ? {} : { ...attributes, ...listeners })}
             className="mt-0.5 cursor-grab touch-none text-current opacity-20 hover:opacity-50 active:cursor-grabbing"
-            aria-label={t.tooltipDragReorder}
+            aria-label="Drag to reorder"
             tabIndex={-1}
           >
             <GripVertical className="h-4 w-4" />
@@ -81,33 +79,33 @@ export function TaskCard({ task, onUpdate, onDelete, isOverlay, autoFocus }: Tas
             e.target.style.height = e.target.scrollHeight + 'px'
           }}
           onBlur={() => { if (!task.text.trim()) onDelete(task.id) }}
-          placeholder={t.writeTask}
+          placeholder="Write your task…"
           rows={1}
           className={[
             'flex-1 resize-none overflow-hidden bg-transparent text-sm leading-relaxed outline-none',
             'placeholder:opacity-30',
             task.done ? 'line-through opacity-40' : '',
           ].join(' ')}
-          aria-label={t.writeTask}
+          aria-label="Task description"
         />
 
         {/* Complete button — visible on hover */}
-        <Tooltip text={t.tooltipMarkDone}>
+        <Tooltip text="Mark as done">
           <button
             onClick={() => onUpdate(task.id, { done: true })}
             className="self-center shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
-            aria-label={t.tooltipMarkDone}
+            aria-label="Mark task complete"
           >
             <Check className="h-4 w-4" />
           </button>
         </Tooltip>
 
         {/* Delete button — visible on hover */}
-        <Tooltip text={t.tooltipDeleteTask}>
+        <Tooltip text="Delete task">
           <button
             onClick={() => onDelete(task.id)}
             className="self-center shrink-0 text-current opacity-0 transition-opacity hover:opacity-70 group-hover:opacity-30"
-            aria-label={t.tooltipDeleteTask}
+            aria-label="Delete task"
           >
             <X className="h-4 w-4" />
           </button>
