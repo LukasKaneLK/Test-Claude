@@ -8,6 +8,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { TaskCard } from './TaskCard'
 import { AddTaskCard } from './AddTaskCard'
 import type { Task } from '@/features/tasks/types'
+import { useLanguage } from '@/i18n/LanguageContext'
 
 interface TaskColumnProps {
   /** Unique droppable id for this column ('left-col' | 'right-col'). */
@@ -21,15 +22,15 @@ interface TaskColumnProps {
 }
 
 export function TaskColumn({ id, tasks, newTaskId, onAdd, onUpdate, onDelete }: TaskColumnProps) {
-  // Make the whole column a drop target so cards can be dropped onto empty columns.
   const { setNodeRef } = useDroppable({ id })
+  const { t } = useLanguage()
 
   return (
     <div className="flex flex-col gap-3" data-tutorial="task-column">
       {/* Column tab header */}
       <div className="flex">
         <span className="rounded-lg bg-black/8 px-3 py-1 text-xs font-semibold uppercase tracking-widest opacity-50 dark:bg-white/8">
-          Planned
+          {t.planned}
         </span>
       </div>
     <div ref={setNodeRef} className="flex min-h-[80px] flex-col gap-3">

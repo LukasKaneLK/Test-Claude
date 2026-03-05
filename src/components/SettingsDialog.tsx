@@ -41,6 +41,15 @@ const LANGUAGES: { value: Lang; Flag: FlagComponent; label: string }[] = [
 ]
 
 export function SettingsDialog({ open, onClose, config, onUpdate }: SettingsDialogProps) {
+  const { t, lang, setLang } = useLanguage()
+
+  const FIELDS: { label: string; key: keyof DraftConfig; min: number; max: number }[] = [
+    { label: t.fieldFocus, key: 'focusMinutes', min: 1, max: 90 },
+    { label: t.fieldShortBreak, key: 'shortBreakMinutes', min: 1, max: 30 },
+    { label: t.fieldLongBreak, key: 'longBreakMinutes', min: 1, max: 60 },
+    { label: t.fieldSessions, key: 'sessionsBeforeLongBreak', min: 1, max: 8 },
+  ]
+
   const [draft, setDraft] = useState<DraftConfig>(() => ({
     focusMinutes: config.focusMinutes,
     shortBreakMinutes: config.shortBreakMinutes,
@@ -83,7 +92,7 @@ export function SettingsDialog({ open, onClose, config, onUpdate }: SettingsDial
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Timer settings</DialogTitle>
+          <DialogTitle>{t.timerSettings}</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
@@ -134,9 +143,9 @@ export function SettingsDialog({ open, onClose, config, onUpdate }: SettingsDial
 
         <DialogFooter>
           <Button variant="outline" onClick={handleReset}>
-            Reset to defaults
+            {t.btnResetDefaults}
           </Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSave}>{t.btnSave}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
