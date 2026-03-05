@@ -62,7 +62,6 @@ interface TimerCardProps extends PomodoroState {
 export function TimerCard({
   phase,
   status,
-  label,
   timeDisplay,
   progress,
   completedSessions,
