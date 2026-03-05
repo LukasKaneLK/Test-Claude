@@ -2,7 +2,7 @@
  * SettingsDialog.tsx
  * Modal dialog for configuring phase durations, session count, and language.
  */
-import { useState } from 'react'
+import React, { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,9 @@ import { DEFAULT_CONFIG } from '@/features/pomodoro/engine/types'
 import type { Config } from '@/features/pomodoro/engine/types'
 import { useLanguage } from '@/i18n/LanguageContext'
 import type { Lang } from '@/i18n/translations'
+import GB from 'country-flag-icons/react/3x2/GB'
+import DE from 'country-flag-icons/react/3x2/DE'
+import UA from 'country-flag-icons/react/3x2/UA'
 
 interface SettingsDialogProps {
   open: boolean
@@ -30,10 +33,10 @@ type DraftConfig = {
   sessionsBeforeLongBreak: number
 }
 
-const LANGUAGES: { value: Lang; label: string }[] = [
-  { value: 'en', label: 'English' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'uk', label: 'Українська' },
+const LANGUAGES: { value: Lang; Flag: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string }[] = [
+  { value: 'en', Flag: GB, label: 'English' },
+  { value: 'de', Flag: DE, label: 'Deutsch' },
+  { value: 'uk', Flag: UA, label: 'Українська' },
 ]
 
 export function SettingsDialog({ open, onClose, config, onUpdate }: SettingsDialogProps) {
@@ -119,21 +122,26 @@ export function SettingsDialog({ open, onClose, config, onUpdate }: SettingsDial
 
           {/* Language selector */}
           <div className="grid grid-cols-2 items-center gap-4">
-            <label htmlFor="language-select" className="text-sm font-medium leading-none">
-              {t.language}
-            </label>
-            <select
-              id="language-select"
-              value={lang}
-              onChange={(e) => setLang(e.target.value as Lang)}
-              className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              {LANGUAGES.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
+            <span className="text-sm font-medium leading-none">{t.language}</span>
+            <div className="flex gap-2">
+              {LANGUAGES.map(({ value, Flag, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setLang(value)}
+                  aria-label={label}
+                  title={label}
+                  className={[
+                    'overflow-hidden rounded border transition-all',
+                    lang === value
+                      ? 'ring-2 ring-ring opacity-100'
+                      : 'opacity-40 hover:opacity-70',
+                  ].join(' ')}
+                >
+                  <Flag className="h-6 w-9 block" />
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         </div>
 
