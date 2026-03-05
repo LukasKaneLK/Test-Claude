@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Coffee, Zap, X } from 'lucide-react'
 import popupSoundUrl from '@/assets/Popup_open.wav'
+import { useLanguage } from '@/i18n/LanguageContext'
 
 export type PopupKind = 'rest' | 'focus'
 
@@ -33,11 +34,9 @@ const ICON_STYLE: Record<PopupKind, React.CSSProperties> = {
   focus: { animation: 'popup-zap 1.4s ease-in-out infinite' },
 }
 
-const CONFIG = {
+const STYLE_CONFIG = {
   rest: {
     Icon: Coffee,
-    title: 'Time to rest!',
-    body: "Great work! Step away from the screen, stretch, and recharge. Your break has begun.",
     bg: 'bg-teal-50 dark:bg-teal-950',
     border: 'border-teal-200 dark:border-teal-800',
     btnClass: 'bg-teal-500 hover:bg-teal-600 text-white',
@@ -45,8 +44,6 @@ const CONFIG = {
   },
   focus: {
     Icon: Zap,
-    title: 'Time to focus!',
-    body: "Break's over. Clear your mind, pick your next task, and dive back in. You've got this.",
     bg: 'bg-rose-50 dark:bg-rose-950',
     border: 'border-rose-200 dark:border-rose-800',
     btnClass: 'bg-rose-500 hover:bg-rose-600 text-white',
@@ -55,6 +52,7 @@ const CONFIG = {
 }
 
 export function PhaseCompletePopup({ kind, onClose }: PhaseCompletePopupProps) {
+  const { t } = useLanguage()
   const [visible, setVisible] = useState(false)
   const soundRef = useRef<HTMLAudioElement | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -94,7 +92,9 @@ export function PhaseCompletePopup({ kind, onClose }: PhaseCompletePopupProps) {
     setTimeout(onClose, 300)
   }
 
-  const { Icon, title, body, bg, border, btnClass, iconBg } = CONFIG[kind]
+  const { Icon, bg, border, btnClass, iconBg } = STYLE_CONFIG[kind]
+  const title = kind === 'rest' ? t.restTitle : t.focusTitle
+  const body = kind === 'rest' ? t.restBody : t.focusBody
 
   return (
     <>
@@ -120,7 +120,7 @@ export function PhaseCompletePopup({ kind, onClose }: PhaseCompletePopupProps) {
         {/* Close button */}
         <button
           onClick={close}
-          aria-label="Dismiss"
+          aria-label={t.gotIt}
           className="absolute right-4 top-4 rounded-full p-1.5 opacity-40 transition-all hover:bg-black/10 hover:opacity-70 dark:hover:bg-white/10"
         >
           <X className="h-4 w-4" />
@@ -144,7 +144,7 @@ export function PhaseCompletePopup({ kind, onClose }: PhaseCompletePopupProps) {
             btnClass,
           ].join(' ')}
         >
-          Got it
+          {t.gotIt}
         </button>
 
       </div>
