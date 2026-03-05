@@ -1,6 +1,6 @@
 /**
  * SettingsDialog.tsx
- * Modal dialog for configuring phase durations, session count, and language.
+ * Modal dialog for configuring phase durations and session count.
  */
 import { useState } from 'react'
 import {
@@ -13,8 +13,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { DEFAULT_CONFIG } from '@/features/pomodoro/engine/types'
 import type { Config } from '@/features/pomodoro/engine/types'
-import { useLanguage } from '@/i18n/LanguageContext'
-import type { Lang } from '@/i18n/translations'
 
 interface SettingsDialogProps {
   open: boolean
@@ -30,27 +28,19 @@ type DraftConfig = {
   sessionsBeforeLongBreak: number
 }
 
-const LANGUAGES: { value: Lang; label: string }[] = [
-  { value: 'en', label: 'English' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'uk', label: 'Українська' },
+const FIELDS: {
+  label: string
+  key: keyof DraftConfig
+  min: number
+  max: number
+}[] = [
+  { label: 'Focus (minutes)', key: 'focusMinutes', min: 1, max: 90 },
+  { label: 'Short break (minutes)', key: 'shortBreakMinutes', min: 1, max: 30 },
+  { label: 'Long break (minutes)', key: 'longBreakMinutes', min: 1, max: 60 },
+  { label: 'Sessions before long break', key: 'sessionsBeforeLongBreak', min: 1, max: 8 },
 ]
 
 export function SettingsDialog({ open, onClose, config, onUpdate }: SettingsDialogProps) {
-  const { t, lang, setLang } = useLanguage()
-
-  const FIELDS: {
-    label: string
-    key: keyof DraftConfig
-    min: number
-    max: number
-  }[] = [
-    { label: t.fieldFocus, key: 'focusMinutes', min: 1, max: 90 },
-    { label: t.fieldShortBreak, key: 'shortBreakMinutes', min: 1, max: 30 },
-    { label: t.fieldLongBreak, key: 'longBreakMinutes', min: 1, max: 60 },
-    { label: t.fieldSessions, key: 'sessionsBeforeLongBreak', min: 1, max: 8 },
-  ]
-
   const [draft, setDraft] = useState<DraftConfig>(() => ({
     focusMinutes: config.focusMinutes,
     shortBreakMinutes: config.shortBreakMinutes,
@@ -93,7 +83,7 @@ export function SettingsDialog({ open, onClose, config, onUpdate }: SettingsDial
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{t.timerSettings}</DialogTitle>
+          <DialogTitle>Timer settings</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
@@ -116,32 +106,13 @@ export function SettingsDialog({ open, onClose, config, onUpdate }: SettingsDial
               />
             </div>
           ))}
-
-          {/* Language selector */}
-          <div className="grid grid-cols-2 items-center gap-4">
-            <label htmlFor="language-select" className="text-sm font-medium leading-none">
-              {t.language}
-            </label>
-            <select
-              id="language-select"
-              value={lang}
-              onChange={(e) => setLang(e.target.value as Lang)}
-              className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              {LANGUAGES.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleReset}>
-            {t.btnResetDefaults}
+            Reset to defaults
           </Button>
-          <Button onClick={handleSave}>{t.btnSave}</Button>
+          <Button onClick={handleSave}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
