@@ -2,7 +2,7 @@
  * SettingsDialog.tsx
  * Modal dialog for configuring phase durations, session count, and language.
  */
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import type { Lang } from '@/i18n/translations'
 import GB from 'country-flag-icons/react/3x2/GB'
 import DE from 'country-flag-icons/react/3x2/DE'
 import UA from 'country-flag-icons/react/3x2/UA'
+import type { FlagComponent } from 'country-flag-icons/react/3x2'
 
 interface SettingsDialogProps {
   open: boolean
@@ -33,7 +34,7 @@ type DraftConfig = {
   sessionsBeforeLongBreak: number
 }
 
-const LANGUAGES: { value: Lang; Flag: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string }[] = [
+const LANGUAGES: { value: Lang; Flag: FlagComponent; label: string }[] = [
   { value: 'en', Flag: GB, label: 'English' },
   { value: 'de', Flag: DE, label: 'Deutsch' },
   { value: 'uk', Flag: UA, label: 'Українська' },
