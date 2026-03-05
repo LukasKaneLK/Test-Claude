@@ -1,0 +1,17 @@
+{
+  "name": "Pomodorko",
+  "short_name": "Pomodorko",
+  "description": "Pomodoro timer with drag-and-drop task management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff1f2",
+  "theme_color": "#fda4af",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
